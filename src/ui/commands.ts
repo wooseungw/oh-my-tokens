@@ -229,7 +229,7 @@ function buildBudgetSection(total: number, todayRequests: number): string[] {
     const pct = Math.min(status.ratio * 100, 100);
     const mark = status.exceeded ? "!" : status.ratio >= 0.8 ? "~" : "✓";
     lines.push(
-      `  ${status.period.padEnd(7)}  ${buildBar(pct)} ${`${Math.round(pct)}%`.padStart(4)}  ${formatTokens(status.used).padStart(7)} / ${formatTokens(status.limit)}  ${mark}`,
+      `  ${status.period.padEnd(7)}  ${buildBar(pct)} ${`${Math.round(pct)}%`.padStart(4)}  ${formatTokens(status.used).padStart(7)} / ${formatTokens(status.limit).padStart(7)}  ${mark}`,
     );
   }
 
@@ -369,7 +369,7 @@ function buildBudgetSummary(): string {
     ...statuses.map((status) => {
       const percent = status.ratio * 100;
       const mark = status.exceeded ? "!" : status.ratio >= 0.8 ? "~" : "✓";
-      return `  ${status.period.padEnd(7, " ")} ${buildBar(percent)} ${percent.toFixed(1)}%  ${formatTokens(status.used)} / ${formatTokens(status.limit)} ${mark}`;
+      return `  ${status.period.padEnd(7)} ${buildBar(percent)} ${`${percent.toFixed(1)}%`.padStart(6)}  ${formatTokens(status.used).padStart(7)} / ${formatTokens(status.limit).padStart(7)} ${mark}`;
     }),
     SECTION_RULE,
   ].join("\n");
@@ -679,7 +679,7 @@ function buildLocalWindowLine(w: {
     const pct = Math.min((w.used / w.limit) * 100, 100);
     const over = w.used > w.limit;
     const mark = over ? " ⚠️" : "";
-    return `  ${w.label} ${buildBar(pct)} ${`${Math.round(pct)}%`.padStart(4)}  ${formatTokens(w.used).padStart(7)} / ${formatTokens(w.limit)}${mark}`;
+    return `  ${w.label} ${buildBar(pct)} ${`${Math.round(pct)}%`.padStart(4)}  ${formatTokens(w.used).padStart(7)} / ${formatTokens(w.limit).padStart(7)}${mark}`;
   }
   return `  ${w.label} ${buildBar(0)} ${" ".padStart(4, " ")}--  ${formatTokens(w.used).padStart(7)}`;
 }

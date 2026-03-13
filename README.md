@@ -11,7 +11,6 @@
 - **Provider Tracking** — Separate token usage by provider (Anthropic, OpenAI, Copilot, etc.)
 - **Agent Attribution** — Track which agent executed the request and which initiated it (execution vs. initiator)
 - **Token Classification** — Classify tokens by type: think, chat, code, input, cache
-- **3-Level Sidebar Display** — Compact (3 rows), Normal (7–10 rows), Extended (12–16 rows)
 - **Slash Commands** — `/omt`, `/omt agents`, `/omt trend`, `/omt budget`, `/omt export`, `/omt status`, `/omt rebuild`
 - **Budget Management** — Daily, weekly, monthly token budgets with alerts
 - **Trend Analysis** — 7-day trends, week-over-week changes, spike detection
@@ -20,6 +19,18 @@
 - **Zero Dependencies** — No npm packages; uses only Bun built-ins (fs, path, crypto, fetch, bun:sqlite)
 - **SQLite WAL** — Atomic event recording + rollup updates in single transaction
 - **Cross-Platform** — Linux, macOS, Windows with automatic data directory detection
+
+## Supported Providers
+
+| Provider | Tracking | Live Quota | API Status | Notes |
+|---|---|---|---|---|
+| anthropic | ✓ | ✓ | Official | OAuth: 5h + 7d windows with reset times via api.anthropic.com/api/oauth/usage |
+| openai | ✓ | ✓ | Unofficial | ChatGPT OAuth: 1h + weekly windows via chatgpt.com backend (undocumented) |
+| copilot | ✓ | ✓ | Official | Monthly premium request quota via GitHub billing API |
+| openrouter | ✓ | ✓ | Official | Credit balance (rolling) via openrouter.ai/api/v1/credits |
+| gemini | ✓ | — | — | Token tracking only; no quota API yet |
+| google | ✓ | — | — | Token tracking only |
+| (any other) | ✓ | — | — | All OpenCode providers tracked; quota requires enrichment support |
 
 ## Installation
 
@@ -35,6 +46,8 @@ Add to `opencode.json`:
 }
 ```
 
+The plugin auto-configures on install via postinstall (adds enrichment:auto + timezone to opencode.json).
+
 ## Configuration
 
 Add to `opencode.json` under `experimental`:
@@ -43,9 +56,6 @@ Add to `opencode.json` under `experimental`:
 {
   "experimental": {
     "oh-my-tokens": {
-      // Display mode: "compact" (3 rows) | "normal" (7–10 rows) | "extend" (12–16 rows)
-      "display": "normal",
-
       // Display unit: "tokens" (default) | "cost"
       "unit": "tokens",
 
@@ -54,7 +64,7 @@ Add to `opencode.json` under `experimental`:
       // - auto: auto-detect provider quotas via auth.json tokens
       // - manual: user-specified provider budgets
       // - opencode-quota: integrate with opencode-quota plugin
-      "enrichment": "off",
+      "enrichment": "auto",
 
       // Toast notifications
       "toast": {
@@ -91,45 +101,15 @@ Add to `opencode.json` under `experimental`:
       // Data retention (days)
       "retention": 90
     }
-  },
-
-  // Sidebar widget ordering (0 = top)
-  "widget": {
-    "oh-my-tokens:usage": { "order": 0 }
   }
 }
 ```
-
-## Sidebar Display Modes
-
-> **Note**: Sidebar display is implemented but currently not rendered — OpenCode does not yet expose a public widget API for plugins. Token data is fully tracked and accessible via `/omt` commands in the meantime.
-
-### Compact (3 rows)
-Minimal view for narrow screens or focus mode:
-- Reply tokens (think/chat/code breakdown)
-- Session total
-- Daily budget status
-
-### Normal (7–10 rows)
-Default view with provider and agent breakdown:
-- Reply tokens
-- Session total
-- Provider breakdown (anthropic, openai, copilot, etc.)
-- Agent breakdown (coder, task, etc.)
-- Daily budget + consumption rate
-
-### Extended (12–16 rows)
-Detailed view for cost optimization and weekly review:
-- All Normal rows
-- Token classification (think, chat, code, input, cache)
-- Weekly and monthly totals
-- Budget status with percentage
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `/omt` | Today's summary with provider breakdown, token classification, and budget status |
+| `/omt` | Today's summary with live provider quotas, token classification, and budget status |
 | `/omt agents` | Agent-by-agent breakdown with agent×model cross-analysis |
 | `/omt trend` | 7-day trend chart with week-over-week changes and spike detection |
 | `/omt budget` | Budget status and remaining capacity |
@@ -139,6 +119,29 @@ Detailed view for cost optimization and weekly review:
 | `/omt setting` | View all plugin settings from opencode.json |
 | `/omt setting <key> <value>` | Update a plugin setting in opencode.json (dot-notation for nested keys) |
 
+### Output Example (`/omt`)
+
+```
+oh-my-tokens — Today's Summary
+─── anthropic ─── 19.5M today ──────────
+  ⏱ 5h    ████░░░░░░░░░░░░   8%  resets 37m  [live]
+  🗓 7d    ██░░░░░░░░░░░░░░   5%              [live]
+─── openai ──────────────────────────────
+  ⏱ 1h    ░░░░░░░░░░░░░░░░   0%  resets 4h 59m  [live]
+  📆 wk   ██████░░░░░░░░░░  37%              [live]
+─── Today ───────────────────────────────
+  anthropic  ████████████████  99%   19.5M tok
+  google     ░░░░░░░░░░░░░░░░   1%  319.0K tok
+  copilot    ░░░░░░░░░░░░░░░░   0%  315.0K tok
+─── Breakdown ───────────────────────────
+  🧠 think    0 ( 0%)   💬 chat  37.2K ( 1%)
+  ⌨️ code     0 ( 0%)   📥 input    95 ( 0%)
+  📦 cache  13.1M (99%)   Σ total  13.2M
+─── Budget ──────────────────────────────
+  daily    ████░░░░░░░░░░░░  28%    13.2M /    50.0M  ✓
+  pace     3.1M tok/h allowed  ·  9.8 req/h  (47 req today)
+```
+
 All command output is non-intrusive (`noReply: true`, `ignored: true`).
 
 ### Changing Settings via Command
@@ -147,7 +150,7 @@ Instead of editing `opencode.json` manually, use `/omt setting`:
 
 ```
 /omt setting                              → show all current settings
-/omt setting display compact              → set display mode
+/omt setting unit cost                    → set display unit to cost
 /omt setting budget.daily 500000          → set daily token budget
 /omt setting budget.timezone Asia/Seoul   → set reset timezone
 /omt setting budget.dailyResetHour 9      → set daily reset hour (in that timezone)
@@ -174,7 +177,7 @@ Changes are written to the `opencode.json` found by walking up from cwd, or the 
 3. **Attribution** — Tracks execution agent and initiator (root agent in delegation chain)
 4. **Recording** — UPSERT events into SQLite with atomic rollup updates
 5. **Analytics** — Aggregates by provider, agent, date; calculates trends and budgets
-6. **Display** — Renders sidebar (5-second polling), toast (per response), and commands
+6. **Display** — Renders toast (per response) and commands
 
 **Zero LLM overhead**: Plugin makes no API calls to LLMs, adds no tokens to context window, and uses only local data by default.
 
