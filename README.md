@@ -99,6 +99,8 @@ Add to `opencode.json` under `experimental`:
 
 ## Sidebar Display Modes
 
+> **Note**: Sidebar display is implemented but currently not rendered — OpenCode does not yet expose a public widget API for plugins. Token data is fully tracked and accessible via `/omt` commands in the meantime.
+
 ### Compact (3 rows)
 Minimal view for narrow screens or focus mode:
 - Reply tokens (think/chat/code breakdown)
