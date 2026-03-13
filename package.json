@@ -40,10 +40,10 @@
     "@opencode-ai/plugin": "^1.1.0"
   },
   "devDependencies": {
-    "@opencode-ai/plugin": "^1.1.14",
+    "@opencode-ai/plugin": "^1.2.25",
     "typescript": "^5.8.0",
-    "@biomejs/biome": "^1.9.0",
-    "vitest": "^4.0.0",
+    "@biomejs/biome": "^2.4.6",
+    "vitest": "^4.1.0",
     "husky": "^9.1.0",
     "lint-staged": "^16.0.0"
   },
