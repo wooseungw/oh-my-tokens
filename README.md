@@ -66,7 +66,10 @@ Add to `opencode.json` under `experimental`:
       "budget": {
         "daily": 500000,
         "weekly": 3000000,
-        "monthly": 10000000
+        "monthly": 10000000,
+        "timezone": "Asia/Seoul",      // IANA timezone — resets are computed in this zone
+        "dailyResetHour": 0,           // Hour (0–23) in the timezone above; default midnight
+        "weeklyResetDay": "monday"     // Weekday name (lowercase); default "monday"
       },
 
       // Cost budgets (optional, requires unit: "cost")

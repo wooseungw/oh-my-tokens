@@ -102,6 +102,11 @@ describe("budget config store", () => {
     expect(getBudgetConfig().dailyResetHour).toBe(6);
   });
 
+  it("timezone is stored", () => {
+    setBudgetConfig({ timezone: "Asia/Seoul" });
+    expect(getBudgetConfig().timezone).toBe("Asia/Seoul");
+  });
+
   it("empty config is returned after reset", () => {
     setBudgetConfig({ daily: 100 });
     setBudgetConfig({});
@@ -155,5 +160,51 @@ describe("budget reset period", () => {
     const result = checkBudget({ weekly: 10000, weeklyResetDay: "funday" });
     expect(result[0].used).toBe(3000);
     expect(getRollupsMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("budget timezone support", () => {
+  afterEach(() => setBudgetConfig({}));
+
+  it("dailyResetHour + timezone: queries events table with UTC-adjusted timestamp", () => {
+    queryOneMock.mockReturnValue({ tokens: 500 });
+    const result = checkBudget({ daily: 1000, dailyResetHour: 9, timezone: "Asia/Seoul" });
+    expect(result[0].used).toBe(500);
+    expect(queryOneMock).toHaveBeenCalledWith(
+      expect.stringContaining("FROM events WHERE ts >="),
+      expect.any(Number),
+    );
+  });
+
+  it("dailyResetHour + invalid timezone: falls back to local time query", () => {
+    queryOneMock.mockReturnValue({ tokens: 200 });
+    const result = checkBudget({ daily: 1000, dailyResetHour: 9, timezone: "Not/Valid" });
+    expect(result[0].used).toBe(200);
+    expect(queryOneMock).toHaveBeenCalledWith(
+      expect.stringContaining("FROM events WHERE ts >="),
+      expect.any(Number),
+    );
+  });
+
+  it("weeklyResetDay: monday + timezone: falls back to getWeekTotal (monday is default)", () => {
+    getWeekTotalMock.mockReturnValue(createRollup(8000));
+    const result = checkBudget({
+      weekly: 10000,
+      weeklyResetDay: "monday",
+      timezone: "America/New_York",
+    });
+    expect(result[0].used).toBe(8000);
+    expect(getRollupsMock).not.toHaveBeenCalled();
+  });
+
+  it("weeklyResetDay: wednesday + timezone: getRollups called", () => {
+    getRollupsMock.mockReturnValue([createRollup(6000)]);
+    const result = checkBudget({
+      weekly: 10000,
+      weeklyResetDay: "wednesday",
+      timezone: "Europe/London",
+    });
+    expect(result[0].used).toBe(6000);
+    expect(getRollupsMock).toHaveBeenCalledWith(expect.any(String), expect.any(String));
   });
 });

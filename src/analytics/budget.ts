@@ -12,6 +12,8 @@ export interface BudgetConfig {
   monthly?: number;
   weeklyResetDay?: string;
   dailyResetHour?: number;
+  /** IANA timezone identifier, e.g. "Asia/Seoul", "America/New_York". Defaults to local system timezone. */
+  timezone?: string;
 }
 
 let _budgetConfig: BudgetConfig = {};
@@ -61,18 +63,79 @@ function parseWeekdayIndex(day: string): number {
   return map[day.toLowerCase()] ?? -1;
 }
 
-function todayAtHourMs(hour: number): number {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, 0, 0, 0).getTime();
+function isValidTimezone(tz: string): boolean {
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
-function mostRecentWeekdayDate(weekdayIndex: number): string {
+function localDateParts(tz: string | undefined): {
+  year: number;
+  month: number;
+  day: number;
+  weekday: number;
+} {
   const now = new Date();
-  const daysBack = (now.getDay() - weekdayIndex + 7) % 7;
-  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysBack);
-  const month = `${d.getMonth() + 1}`.padStart(2, "0");
-  const day = `${d.getDate()}`.padStart(2, "0");
-  return `${d.getFullYear()}-${month}-${day}`;
+  if (tz === undefined || !isValidTimezone(tz)) {
+    return {
+      year: now.getFullYear(),
+      month: now.getMonth(),
+      day: now.getDate(),
+      weekday: now.getDay(),
+    };
+  }
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    weekday: "short",
+  }).formatToParts(now);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  const weekdayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  return {
+    year: Number(get("year")),
+    month: Number(get("month")) - 1,
+    day: Number(get("day")),
+    weekday: weekdayNames.indexOf(get("weekday")),
+  };
+}
+
+function todayAtHourMs(hour: number, tz: string | undefined): number {
+  const { year, month, day } = localDateParts(tz);
+  if (tz === undefined || !isValidTimezone(tz)) {
+    return new Date(year, month, day, hour, 0, 0, 0).getTime();
+  }
+  const mm = `${month + 1}`.padStart(2, "0");
+  const dd = `${day}`.padStart(2, "0");
+  const hh = `${hour}`.padStart(2, "0");
+  const localIso = `${year}-${mm}-${dd}T${hh}:00:00`;
+  const probe = new Date(`${localIso}Z`);
+  const displayed = new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(probe);
+  const displayedMs = new Date(`${displayed.replace(", ", "T")}Z`).getTime();
+  const offsetMs = probe.getTime() - displayedMs;
+  return new Date(`${localIso}Z`).getTime() + offsetMs;
+}
+
+function mostRecentWeekdayDate(weekdayIndex: number, tz: string | undefined): string {
+  const { year, month, day, weekday } = localDateParts(tz);
+  const daysBack = (weekday - weekdayIndex + 7) % 7;
+  const d = new Date(year, month, day - daysBack);
+  const mo = `${d.getMonth() + 1}`.padStart(2, "0");
+  const da = `${d.getDate()}`.padStart(2, "0");
+  return `${d.getFullYear()}-${mo}-${da}`;
 }
 
 function getTotalRowTotal(rows: RollupRow[]): number {
@@ -87,23 +150,23 @@ function getTotalRowTotal(rows: RollupRow[]): number {
     .reduce((sum, row) => sum + totalTokens(row), 0);
 }
 
-function getDailyUsed(resetHour: number | undefined): number {
+function getDailyUsed(resetHour: number | undefined, tz: string | undefined): number {
   const validHour =
     resetHour !== undefined && Number.isInteger(resetHour) && resetHour >= 1 && resetHour <= 23;
   if (validHour) {
     const row = queryOne<TokenSumRow>(
       "SELECT CAST(SUM(inp + out + think + cache_r + cache_w) AS INTEGER) AS tokens FROM events WHERE ts >= ?",
-      todayAtHourMs(resetHour as number),
+      todayAtHourMs(resetHour as number, tz),
     );
     return row?.tokens ?? 0;
   }
   return getTotalRowTotal(getTodayRollups());
 }
 
-function getWeeklyUsed(resetDay: string | undefined): number {
+function getWeeklyUsed(resetDay: string | undefined, tz: string | undefined): number {
   const weekdayIdx = resetDay !== undefined ? parseWeekdayIndex(resetDay) : 1;
   if (weekdayIdx !== -1 && weekdayIdx !== 1) {
-    const rows = getRollups(mostRecentWeekdayDate(weekdayIdx), todayDateKey());
+    const rows = getRollups(mostRecentWeekdayDate(weekdayIdx, tz), todayDateKey());
     return rows
       .filter((row) => row.kind === "total" && row.name === "*")
       .reduce((sum, row) => sum + totalTokens(row), 0);
@@ -115,7 +178,7 @@ export function checkBudget(config: BudgetConfig): BudgetStatus[] {
   const statuses: BudgetStatus[] = [];
 
   if (config.daily !== undefined) {
-    const used = getDailyUsed(config.dailyResetHour);
+    const used = getDailyUsed(config.dailyResetHour, config.timezone);
     statuses.push({
       period: "daily",
       limit: config.daily,
@@ -126,7 +189,7 @@ export function checkBudget(config: BudgetConfig): BudgetStatus[] {
   }
 
   if (config.weekly !== undefined) {
-    const used = getWeeklyUsed(config.weeklyResetDay);
+    const used = getWeeklyUsed(config.weeklyResetDay, config.timezone);
     statuses.push({
       period: "weekly",
       limit: config.weekly,

@@ -100,6 +100,9 @@ function extractBudgetConfig(pluginCfg: Record<string, unknown> | undefined): vo
   if (Number.isInteger(resetHour) && resetHour >= 0 && resetHour <= 23) {
     parsed.dailyResetHour = resetHour;
   }
+  if (typeof budgetCfg.timezone === "string" && budgetCfg.timezone.length > 0) {
+    parsed.timezone = budgetCfg.timezone;
+  }
   setBudgetConfig(parsed);
 }
 
