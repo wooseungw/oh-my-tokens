@@ -28,3 +28,9 @@ oh-my-tokens.db-shm
 # Reference / scratch
 references/
 AGENTS.md
+
+# Internal AI planning files
+.sisyphus/
+
+# Embedded repos / local experiments
+opencode-quota/
