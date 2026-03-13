@@ -14,6 +14,7 @@ import {
   getWeekProviderRollups,
   type RollupRow,
 } from "../storage/rollup";
+
 import { todayDateKey } from "../utils";
 import { formatTokens } from "./formatter";
 
@@ -135,16 +136,155 @@ function createCommandTextPart(text: string): { type: "text"; text: string } {
   };
 }
 
+function buildProviderSectionHeader(name: string): string {
+  const HEADER_WIDTH = 38;
+  const dashFill = Math.max(0, HEADER_WIDTH - 5 - name.length);
+  return `─── ${name} ${"─".repeat(dashFill)}`;
+}
+
+function buildProviderQuotaLine(
+  icon: string,
+  label: string,
+  pctUsed: number,
+  resetTimeIso?: string,
+): string {
+  const pctStr = `${pctUsed}%`.padStart(4);
+  const resetStr = resetTimeIso ? `  resets ${formatTimeUntil(resetTimeIso)}` : "";
+  return `  ${icon} ${label.padEnd(3)}   ${buildBar(pctUsed)} ${pctStr}${resetStr}  [live]`;
+}
+
+function buildProviderWeeklyQuotaLine(
+  liveQuota: NonNullable<ReturnType<typeof getLiveQuota>>,
+): string {
+  const w = liveQuota.windows?.weekly;
+  if (!w) return "";
+  const pctUsed = Math.round(100 - w.percentRemaining);
+  if (liveQuota.unit === "credits" && liveQuota.limit > 0) {
+    const remaining = liveQuota.limit - liveQuota.used;
+    return `  💳 wk    ${buildBar(pctUsed)} ${`${pctUsed}%`.padStart(4)}  $${remaining.toFixed(2)} / $${liveQuota.limit.toFixed(2)}  [live]`;
+  }
+  if (liveQuota.unit === "requests" && liveQuota.limit > 0) {
+    const used = Math.round(liveQuota.used);
+    const resetStr = w.resetTimeIso
+      ? `  resets ${new Date(w.resetTimeIso).toLocaleString("en-US", { month: "short", day: "numeric" })}`
+      : "";
+    return `  🗓 mo    ${buildBar(pctUsed)} ${`${pctUsed}%`.padStart(4)}  ${used} / ${liveQuota.limit} req${resetStr}  [live]`;
+  }
+  return buildProviderQuotaLine("📆", "wk", pctUsed, w.resetTimeIso);
+}
+
+function buildProviderBlock(
+  name: string,
+  todayRow: RollupRow | undefined,
+  weekRow: RollupRow | undefined,
+  allTodayTotal: number,
+  allWeekTotal: number,
+  liveQuota: ReturnType<typeof getLiveQuota>,
+): string[] {
+  const lines: string[] = [buildProviderSectionHeader(name)];
+
+  if (todayRow !== undefined) {
+    const tok = totalTokens(todayRow);
+    const pct = allTodayTotal > 0 ? (tok / allTodayTotal) * 100 : 0;
+    lines.push(
+      `  today    ${buildBar(pct)} ${`${Math.round(pct)}%`.padStart(4)}  ${formatTokens(tok).padStart(7)} tok`,
+    );
+  } else if (weekRow !== undefined) {
+    const tok = totalTokens(weekRow);
+    const pct = allWeekTotal > 0 ? (tok / allWeekTotal) * 100 : 0;
+    lines.push(
+      `  this wk  ${buildBar(pct)} ${`${Math.round(pct)}%`.padStart(4)}  ${formatTokens(tok).padStart(7)} tok`,
+    );
+  }
+
+  if (liveQuota?.windows) {
+    const { windows } = liveQuota;
+    if (windows.fiveHour) {
+      const pctUsed = Math.round(100 - windows.fiveHour.percentRemaining);
+      lines.push(buildProviderQuotaLine("⏱", "5h", pctUsed, windows.fiveHour.resetTimeIso));
+    }
+    if (windows.hourly) {
+      const pctUsed = Math.round(100 - windows.hourly.percentRemaining);
+      lines.push(buildProviderQuotaLine("⏱", "1h", pctUsed, windows.hourly.resetTimeIso));
+    }
+    if (windows.sevenDay) {
+      const pctUsed = Math.round(100 - windows.sevenDay.percentRemaining);
+      lines.push(buildProviderQuotaLine("🗓", "7d", pctUsed, windows.sevenDay.resetTimeIso));
+    }
+    if (windows.weekly) {
+      lines.push(buildProviderWeeklyQuotaLine(liveQuota));
+    }
+  }
+
+  return lines;
+}
+
+function buildBudgetSection(total: number, todayRequests: number): string[] {
+  const daily = getDailyBudget();
+  const weekly = getPeriodBudget("weekly");
+  const monthly = getPeriodBudget("monthly");
+
+  if (daily === null && weekly === null && monthly === null) return [];
+
+  const cfg = getBudgetConfig();
+  const statuses = checkBudget({
+    ...cfg,
+    daily: daily ?? undefined,
+    weekly: weekly ?? undefined,
+    monthly: monthly ?? undefined,
+  });
+
+  const lines: string[] = ["─── Budget ─────────────────────────"];
+  for (const status of statuses) {
+    const pct = Math.min(status.ratio * 100, 100);
+    const mark = status.exceeded ? "!" : status.ratio >= 0.8 ? "~" : "✓";
+    lines.push(
+      `  ${status.period.padEnd(7)}  ${buildBar(pct)} ${`${Math.round(pct)}%`.padStart(4)}  ${formatTokens(status.used).padStart(7)} / ${formatTokens(status.limit)}  ${mark}`,
+    );
+  }
+
+  if (daily !== null) {
+    const now = new Date();
+    const hoursElapsed = now.getHours() + now.getMinutes() / 60;
+    const hoursLeft = 24 - hoursElapsed;
+    if (hoursElapsed > 0.25 && hoursLeft > 0.25) {
+      const allowed = Math.max(0, daily - total);
+      const allowedPerHour = allowed / hoursLeft;
+      const reqPerHour = todayRequests / hoursElapsed;
+      lines.push(
+        `  pace     ${formatTokens(Math.round(allowedPerHour))}/h allowed  ·  ${reqPerHour.toFixed(1)} req/h  (${todayRequests} req today)`,
+      );
+    }
+  }
+
+  return lines;
+}
+
 function buildTodaySummary(rows: RollupRow[]): string {
   const todayTotal = findTodayTotal(rows);
   const total = totalTokens(todayTotal);
   const cacheTotal = todayTotal.cache_r + todayTotal.cache_w;
-  const providers = rows
+
+  const providerRows = rows
     .filter((row) => row.kind === "provider")
     .sort((left, right) => totalTokens(right) - totalTokens(left));
-  const budget = getDailyBudget();
-  const budgetPercent = budget === null || budget === 0 ? 0 : (total / budget) * 100;
-  const budgetMark = budget === null ? "-" : budgetPercent >= 80 ? "!" : "✓";
+  const todayRequests = providerRows.reduce((sum, row) => sum + row.count, 0);
+  const todayMap = new Map(providerRows.map((r) => [r.name, r]));
+
+  const liveProviders = getLiveProviders();
+  const weekRows = getWeekProviderRollups();
+  const weekMap = new Map(weekRows.map((r) => [r.name, r]));
+  const weekTotal = weekRows.reduce((sum, r) => sum + totalTokens(r), 0);
+
+  const allProviderNames = Array.from(
+    new Set([...providerRows.map((r) => r.name), ...liveProviders, ...weekRows.map((r) => r.name)]),
+  ).sort((a, b) => {
+    const aRow = todayMap.get(a);
+    const bRow = todayMap.get(b);
+    return (
+      (bRow !== undefined ? totalTokens(bRow) : 0) - (aRow !== undefined ? totalTokens(aRow) : 0)
+    );
+  });
 
   const alertCfg = {
     daily: getDailyBudget() ?? undefined,
@@ -153,22 +293,24 @@ function buildTodaySummary(rows: RollupRow[]): string {
   };
   const alert = formatBudgetAlert(checkBudget(alertCfg));
 
+  const pct = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
   const summaryBody = [
     "oh-my-tokens — Today's Summary",
-    "─── Providers ─────────────────────",
-    ...providers.map((row) => {
-      const providerTotal = totalTokens(row);
-      const percent = total > 0 ? (providerTotal / total) * 100 : 0;
-      return formatUsageLine(row.name, percent, providerTotal);
-    }),
+    ...allProviderNames.flatMap((name) =>
+      buildProviderBlock(
+        name,
+        todayMap.get(name),
+        weekMap.get(name),
+        total,
+        weekTotal,
+        getLiveQuota(name),
+      ),
+    ),
     "─── Breakdown ──────────────────────",
-    `  🧠 think  ${formatTokens(todayTotal.think).padStart(6, " ")} (${`${total > 0 ? Math.round((todayTotal.think / total) * 100) : 0}%`.padStart(3, " ")})   💬 chat  ${formatTokens(todayTotal.chat).padStart(6, " ")} (${`${total > 0 ? Math.round((todayTotal.chat / total) * 100) : 0}%`.padStart(3, " ")})`,
-    `  ⌨️ code   ${formatTokens(todayTotal.code).padStart(6, " ")} (${`${total > 0 ? Math.round((todayTotal.code / total) * 100) : 0}%`.padStart(3, " ")})   📥 input ${formatTokens(todayTotal.inp).padStart(6, " ")} (${`${total > 0 ? Math.round((todayTotal.inp / total) * 100) : 0}%`.padStart(3, " ")})`,
-    `  📦 cache  ${formatTokens(cacheTotal).padStart(6, " ")} (${`${total > 0 ? Math.round((cacheTotal / total) * 100) : 0}%`.padStart(3, " ")})   Σ total ${formatTokens(total).padStart(6, " ")}`,
-    "─── Budget ─────────────────────────",
-    budget === null
-      ? `BUDGET  ${formatTokens(total)} daily  ${buildBar(0)}   -`
-      : `BUDGET  ${formatTokens(total)} / ${formatTokens(budget)} daily  ${buildBar(budgetPercent)} ${budgetPercent.toFixed(1)}%  ${budgetMark}`,
+    `  🧠 think  ${formatTokens(todayTotal.think).padStart(6)} (${`${pct(todayTotal.think)}%`.padStart(3)})   💬 chat  ${formatTokens(todayTotal.chat).padStart(6)} (${`${pct(todayTotal.chat)}%`.padStart(3)})`,
+    `  ⌨️ code   ${formatTokens(todayTotal.code).padStart(6)} (${`${pct(todayTotal.code)}%`.padStart(3)})   📥 input ${formatTokens(todayTotal.inp).padStart(6)} (${`${pct(todayTotal.inp)}%`.padStart(3)})`,
+    `  📦 cache  ${formatTokens(cacheTotal).padStart(6)} (${`${pct(cacheTotal)}%`.padStart(3)})   Σ total ${formatTokens(total).padStart(6)}`,
+    ...buildBudgetSection(total, todayRequests),
   ].join("\n");
 
   return alert !== null ? `${alert}\n\n${summaryBody}` : summaryBody;

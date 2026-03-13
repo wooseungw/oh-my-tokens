@@ -74,6 +74,8 @@ import { handleOmtCommand } from "../../src/ui/commands";
 
 describe("handleOmtCommand — default summary", () => {
   beforeEach(() => {
+    getWeekProviderRollupsMock.mockReset();
+    getWeekProviderRollupsMock.mockReturnValue([]);
     getTodayRollupsMock.mockReset();
     getTodayRollupsMock.mockReturnValue([
       {

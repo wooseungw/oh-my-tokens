@@ -1,3 +1,4 @@
+import { existsSync, readFileSync } from "node:fs";
 import type { Plugin } from "@opencode-ai/plugin";
 
 import { type BudgetConfig, setBudgetConfig } from "./analytics/budget";
@@ -5,8 +6,10 @@ import { type ProviderConfig, setProviderConfigs } from "./analytics/plans";
 import { setLiveQuotas } from "./analytics/quota";
 import type { ProviderQuota } from "./enrichment/providers";
 import { type EnrichmentConfig, normalizeMode, resolveEnrichment } from "./enrichment/resolver";
+import { findOpencodeConfigPath } from "./paths";
 import { createPipelineHooks } from "./pipeline";
 import { runBackfill } from "./storage/backfill";
+import { setWeeklyResetDay } from "./storage/rollup";
 import { handleOmtCommand } from "./ui/commands";
 import { buildSidebarItems, type DisplayMode } from "./ui/sidebar";
 
@@ -88,6 +91,18 @@ const COMMAND_ARGS: Readonly<Record<string, string>> = {
 export function getSidebarItems(mode: DisplayMode) {
   return buildSidebarItems(mode);
 }
+function readPluginConfigFromFile(): Record<string, unknown> | undefined {
+  const configPath = findOpencodeConfigPath();
+  if (!existsSync(configPath)) return undefined;
+  try {
+    const root = JSON.parse(readFileSync(configPath, "utf8")) as Record<string, unknown>;
+    const exp = root.experimental as Record<string, unknown> | undefined;
+    return exp?.["oh-my-tokens"] as Record<string, unknown> | undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function extractBudgetConfig(pluginCfg: Record<string, unknown> | undefined): void {
   const budgetCfg = pluginCfg?.budget as Record<string, unknown> | undefined;
   if (budgetCfg === undefined) return;
@@ -109,6 +124,7 @@ function extractBudgetConfig(pluginCfg: Record<string, unknown> | undefined): vo
     parsed.timezone = budgetCfg.timezone;
   }
   setBudgetConfig(parsed);
+  setWeeklyResetDay(parsed.weeklyResetDay);
 }
 
 export const OhMyTokensPlugin: Plugin = async (input) => {
@@ -127,9 +143,7 @@ export const OhMyTokensPlugin: Plugin = async (input) => {
     config: async (config) => {
       config.command ??= {};
       Object.assign(config.command, OMT_COMMANDS);
-      const raw = config as Record<string, unknown>;
-      const experimental = raw.experimental as Record<string, unknown> | undefined;
-      const pluginCfg = experimental?.["oh-my-tokens"] as Record<string, unknown> | undefined;
+      const pluginCfg = readPluginConfigFromFile();
       const providers = pluginCfg?.providers as Record<string, ProviderConfig> | undefined;
       if (providers !== undefined) setProviderConfigs(providers);
       extractBudgetConfig(pluginCfg);

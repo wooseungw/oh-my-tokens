@@ -38,15 +38,27 @@ function monthBounds(date: Date): { from: string; to: string } {
   };
 }
 
-function weekBounds(date: Date): { from: string; to: string } {
-  const current = new Date(date);
-  const day = current.getDay();
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-  const start = new Date(current);
-  start.setDate(current.getDate() + diffToMonday);
-  const end = new Date(start);
-  end.setDate(start.getDate() + 6);
+const DAY_NAME_MAP: Record<string, number> = {
+  sunday: 0,
+  monday: 1,
+  tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+  saturday: 6,
+};
 
+let _weeklyResetDayIndex = 1;
+
+export function setWeeklyResetDay(day: string | undefined): void {
+  _weeklyResetDayIndex = day !== undefined ? (DAY_NAME_MAP[day.toLowerCase()] ?? 1) : 1;
+}
+
+function weekBounds(date: Date): { from: string; to: string } {
+  const currentDay = date.getDay();
+  const daysBack = (currentDay - _weeklyResetDayIndex + 7) % 7;
+  const start = new Date(date.getFullYear(), date.getMonth(), date.getDate() - daysBack);
+  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
   return {
     from: formatLocalDate(start.getFullYear(), start.getMonth(), start.getDate()),
     to: formatLocalDate(end.getFullYear(), end.getMonth(), end.getDate()),

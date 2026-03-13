@@ -221,8 +221,8 @@ async function fetchAnthropicOAuthQuota(token: string): Promise<ProviderQuota | 
     });
     if (!response.ok) return null;
     const data = (await response.json()) as {
-      five_hour?: { utilization?: number };
-      seven_day?: { utilization?: number };
+      five_hour?: { utilization?: number; resets_at?: string };
+      seven_day?: { utilization?: number; resets_at?: string };
     };
     const fiveHourUtil = data.five_hour?.utilization;
     const sevenDayUtil = data.seven_day?.utilization;
@@ -234,10 +234,20 @@ async function fetchAnthropicOAuthQuota(token: string): Promise<ProviderQuota | 
       unit: "tokens",
       windows: {
         ...(fiveHourUtil !== undefined && {
-          fiveHour: { percentRemaining: clampPercent(100 - fiveHourUtil) },
+          fiveHour: {
+            percentRemaining: clampPercent(100 - fiveHourUtil),
+            ...(data.five_hour?.resets_at !== undefined && {
+              resetTimeIso: data.five_hour.resets_at,
+            }),
+          },
         }),
         ...(sevenDayUtil !== undefined && {
-          sevenDay: { percentRemaining: clampPercent(100 - sevenDayUtil) },
+          sevenDay: {
+            percentRemaining: clampPercent(100 - sevenDayUtil),
+            ...(data.seven_day?.resets_at !== undefined && {
+              resetTimeIso: data.seven_day.resets_at,
+            }),
+          },
         }),
       },
     };
