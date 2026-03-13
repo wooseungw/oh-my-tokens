@@ -1,6 +1,6 @@
 {
   "name": "oh-my-tokens",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "OpenCode plugin: per-provider, per-agent, per-task-type token usage tracking and visualization",
   "type": "module",
   "main": "dist/index.js",
@@ -14,7 +14,8 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "scripts"
   ],
   "scripts": {
     "build": "tsc",
@@ -27,6 +28,7 @@
     "check": "biome check --write .",
     "check:ci": "biome ci .",
     "prepare": "husky",
+    "postinstall": "node scripts/postinstall.mjs",
     "verify:release-version": "node scripts/verify-release-version.mjs",
     "pricing:refresh": "node scripts/refresh-modelsdev-pricing.mjs"
   },
