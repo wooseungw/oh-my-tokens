@@ -54,12 +54,11 @@
     "@opencode-ai/plugin": "^1.1.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.6",
     "@opencode-ai/plugin": "^1.1.14",
-    "typescript": "^5.8.0",
-    "@biomejs/biome": "^1.9.0",
-    "vitest": "^4.0.0",
     "husky": "^9.1.0",
-    "lint-staged": "^16.0.0"
-  },
-  "dependencies": {}
+    "lint-staged": "^16.0.0",
+    "typescript": "^5.8.0",
+    "vitest": "^4.0.0"
+  }
 }
