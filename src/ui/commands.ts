@@ -1,8 +1,11 @@
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import { checkBudget, formatBudgetAlert, getBudgetConfig } from "../analytics/budget";
 import { getResolvedProviderConfig, hasAnyProviderLimits } from "../analytics/plans";
 import { getLiveProviders, getLiveQuota } from "../analytics/quota";
 import { detectSpikes, formatTrendChart, getDailyTrend, getWowChange } from "../analytics/trends";
 import type { ProviderQuotaWindow } from "../enrichment/providers";
+import { findOpencodeConfigPath } from "../paths";
 import { execute, queryAll, queryOne, runInTransaction } from "../storage/db";
 import {
   getHourProviderTotals,
@@ -53,6 +56,7 @@ interface EventRow {
 interface ParsedCommand {
   subcommand: string;
   args: string[];
+  rawTail: string;
 }
 
 interface UsageTotals {
@@ -437,16 +441,13 @@ function rebuildRollups(): { eventsProcessed: number; rollupsCreated: number } {
 }
 
 function parseCommand(args: string): ParsedCommand {
-  const tokens = args
-    .trim()
-    .toLowerCase()
-    .split(/\s+/)
-    .filter((token) => token.length > 0);
-
-  return {
-    subcommand: tokens[0] ?? "",
-    args: tokens.slice(1),
-  };
+  const trimmed = args.trim();
+  const lower = trimmed.toLowerCase();
+  const tokens = lower.split(/\s+/).filter((token) => token.length > 0);
+  const subcommand = tokens[0] ?? "";
+  const firstSpace = trimmed.indexOf(" ");
+  const rawTail = firstSpace === -1 ? "" : trimmed.slice(firstSpace + 1).trim();
+  return { subcommand, args: tokens.slice(1), rawTail };
 }
 
 function formatTimeUntil(isoString: string): string {
@@ -616,6 +617,137 @@ function buildLimitsSummary(): string {
   return lines.join("\n");
 }
 
+type SettingValue = string | number | boolean;
+
+function readRawPluginConfig(configPath: string): Record<string, unknown> {
+  if (!existsSync(configPath)) return {};
+  try {
+    const raw = JSON.parse(readFileSync(configPath, "utf8")) as Record<string, unknown>;
+    const exp = raw.experimental as Record<string, unknown> | undefined;
+    return (exp?.["oh-my-tokens"] as Record<string, unknown>) ?? {};
+  } catch {
+    return {};
+  }
+}
+
+function coerceSettingValue(raw: string): SettingValue {
+  if (raw === "true") return true;
+  if (raw === "false") return false;
+  const n = Number(raw);
+  if (raw.trim() !== "" && Number.isFinite(n)) return n;
+  return raw;
+}
+
+function fmtVal(val: unknown): string {
+  if (val === undefined || val === null) return "(not set)";
+  return String(val);
+}
+
+function buildSettingDisplay(configPath: string): string {
+  const cfg = readRawPluginConfig(configPath);
+  const budget = (cfg.budget as Record<string, unknown>) ?? {};
+  const toast = (cfg.toast as Record<string, unknown>) ?? {};
+  const row = (key: string, val: unknown) => `  ${key.padEnd(24)} ${fmtVal(val)}`;
+  return [
+    "oh-my-tokens — Settings",
+    SECTION_RULE,
+    `Config   ${configPath}`,
+    "",
+    row("display", cfg.display),
+    row("unit", cfg.unit),
+    row("enrichment", cfg.enrichment),
+    row("lang", cfg.lang),
+    row("retention", cfg.retention !== undefined ? `${cfg.retention} days` : undefined),
+    "─── Budget ─────────────────────────────",
+    row("budget.daily", budget.daily),
+    row("budget.weekly", budget.weekly),
+    row("budget.monthly", budget.monthly),
+    row("budget.timezone", budget.timezone),
+    row("budget.dailyResetHour", budget.dailyResetHour),
+    row("budget.weeklyResetDay", budget.weeklyResetDay),
+    "─── Toast ───────────────────────────────",
+    row("toast.enabled", toast.enabled),
+    row("toast.durationMs", toast.durationMs),
+    "",
+    "Set:  /omt setting <key> <value>",
+    "e.g.: /omt setting budget.daily 500000",
+    "      /omt setting budget.timezone Asia/Seoul",
+    SECTION_RULE,
+  ].join("\n");
+}
+
+function applySettingChange(
+  configPath: string,
+  key: string,
+  value: SettingValue,
+): { ok: boolean; error?: string } {
+  let root: Record<string, unknown> = {};
+  if (existsSync(configPath)) {
+    try {
+      root = JSON.parse(readFileSync(configPath, "utf8")) as Record<string, unknown>;
+    } catch {
+      return { ok: false, error: "Could not parse opencode.json" };
+    }
+  }
+  if (typeof root.experimental !== "object" || root.experimental === null) {
+    root.experimental = {};
+  }
+  const exp = root.experimental as Record<string, unknown>;
+  if (typeof exp["oh-my-tokens"] !== "object" || exp["oh-my-tokens"] === null) {
+    exp["oh-my-tokens"] = {};
+  }
+  const plugin = exp["oh-my-tokens"] as Record<string, unknown>;
+  const dotIdx = key.indexOf(".");
+  if (dotIdx !== -1) {
+    const parentKey = key.slice(0, dotIdx);
+    const childKey = key.slice(dotIdx + 1);
+    if (typeof plugin[parentKey] !== "object" || plugin[parentKey] === null) {
+      plugin[parentKey] = {};
+    }
+    (plugin[parentKey] as Record<string, unknown>)[childKey] = value;
+  } else {
+    plugin[key] = value;
+  }
+  try {
+    mkdirSync(dirname(configPath), { recursive: true });
+    writeFileSync(configPath, `${JSON.stringify(root, null, 2)}\n`, "utf8");
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: String(err) };
+  }
+}
+
+function buildSettingCommandOutput(rawTail: string): string {
+  const configPath = findOpencodeConfigPath();
+  if (rawTail.trim() === "") {
+    return buildSettingDisplay(configPath);
+  }
+  const parts = rawTail.split(/\s+/);
+  const key = (parts[0] ?? "").toLowerCase();
+  const rawValue = parts.slice(1).join(" ");
+  if (rawValue === "") {
+    return [
+      "oh-my-tokens — Settings",
+      SECTION_RULE,
+      "Usage: /omt setting <key> <value>",
+      "Example: /omt setting budget.daily 500000",
+    ].join("\n");
+  }
+  const value = coerceSettingValue(rawValue);
+  const result = applySettingChange(configPath, key, value);
+  if (!result.ok) {
+    return ["oh-my-tokens — Settings", SECTION_RULE, `✗ ${result.error}`].join("\n");
+  }
+  return [
+    "oh-my-tokens — Settings",
+    SECTION_RULE,
+    `✓ ${key} = ${String(value)}`,
+    `Config   ${configPath}`,
+    "Restart OpenCode to apply changes.",
+    SECTION_RULE,
+  ].join("\n");
+}
+
 function buildCommandText(command: ParsedCommand, sessionID: string): string {
   switch (command.subcommand) {
     case "agents":
@@ -634,6 +766,8 @@ function buildCommandText(command: ParsedCommand, sessionID: string): string {
     }
     case "limits":
       return buildLimitsSummary();
+    case "setting":
+      return buildSettingCommandOutput(command.rawTail);
     default:
       return buildTodaySummary(getTodayRollups());
   }

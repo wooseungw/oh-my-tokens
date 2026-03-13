@@ -65,6 +65,30 @@ export function findOpenCodeDbPath(): string | null {
   return null;
 }
 
+function getGlobalOpencodeConfigPath(): string {
+  const homeDir = homedir();
+  if (process.platform === "win32") {
+    const appData = process.env.APPDATA?.trim();
+    if (appData) return path.join(appData, "opencode", "opencode.json");
+  }
+  const xdgConfig = process.env.XDG_CONFIG_HOME?.trim();
+  if (xdgConfig) return path.join(xdgConfig, "opencode", "opencode.json");
+  return path.join(homeDir, ".config", "opencode", "opencode.json");
+}
+
+export function findOpencodeConfigPath(): string {
+  let dir = process.cwd();
+  const root = path.parse(dir).root;
+  while (true) {
+    const candidate = path.join(dir, "opencode.json");
+    if (existsSync(candidate)) return candidate;
+    const parent = path.dirname(dir);
+    if (parent === dir || dir === root) break;
+    dir = parent;
+  }
+  return getGlobalOpencodeConfigPath();
+}
+
 export function getOhMyTokensDataDir(): string {
   const existingOpenCodeDir = getDataDirCandidates().find((candidate) => existsSync(candidate));
 

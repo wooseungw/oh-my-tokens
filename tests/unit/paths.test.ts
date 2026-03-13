@@ -121,4 +121,37 @@ describe("paths", () => {
       path.join("/home/tester", ".local", "share", "opencode", "oh-my-tokens"),
     );
   });
+
+  it("findOpencodeConfigPath finds opencode.json in cwd", async () => {
+    setPlatform("linux");
+    const cwd = process.cwd();
+    existsSyncMock.mockImplementation((target) => target === path.join(cwd, "opencode.json"));
+
+    const { findOpencodeConfigPath } = await loadPathsModule();
+
+    expect(findOpencodeConfigPath()).toBe(path.join(cwd, "opencode.json"));
+  });
+
+  it("findOpencodeConfigPath falls back to global config when not found in cwd", async () => {
+    setPlatform("linux");
+    existsSyncMock.mockReturnValue(false);
+
+    const { findOpencodeConfigPath } = await loadPathsModule();
+
+    expect(findOpencodeConfigPath()).toBe(
+      path.join("/home/tester", ".config", "opencode", "opencode.json"),
+    );
+  });
+
+  it("findOpencodeConfigPath respects XDG_CONFIG_HOME on linux", async () => {
+    setPlatform("linux");
+    process.env.XDG_CONFIG_HOME = "/tmp/xdg-config";
+    existsSyncMock.mockReturnValue(false);
+
+    const { findOpencodeConfigPath } = await loadPathsModule();
+
+    expect(findOpencodeConfigPath()).toBe(
+      path.join("/tmp/xdg-config", "opencode", "opencode.json"),
+    );
+  });
 });

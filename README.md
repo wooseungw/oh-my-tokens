@@ -136,8 +136,25 @@ Detailed view for cost optimization and weekly review:
 | `/omt export [json\|csv]` | Export usage data in JSON or CSV format |
 | `/omt status` | Diagnostic info (detected providers, database size, pricing data freshness) |
 | `/omt rebuild` | Rebuild rollup aggregates from events table |
+| `/omt setting` | View all plugin settings from opencode.json |
+| `/omt setting <key> <value>` | Update a plugin setting in opencode.json (dot-notation for nested keys) |
 
 All command output is non-intrusive (`noReply: true`, `ignored: true`).
+
+### Changing Settings via Command
+
+Instead of editing `opencode.json` manually, use `/omt setting`:
+
+```
+/omt setting                              → show all current settings
+/omt setting display compact              → set display mode
+/omt setting budget.daily 500000          → set daily token budget
+/omt setting budget.timezone Asia/Seoul   → set reset timezone
+/omt setting budget.dailyResetHour 9      → set daily reset hour (in that timezone)
+/omt setting toast.enabled false          → disable toast notifications
+```
+
+Changes are written to the `opencode.json` found by walking up from cwd, or the global `~/.config/opencode/opencode.json`. **Restart OpenCode to apply.**
 
 ## Enrichment Modes
 

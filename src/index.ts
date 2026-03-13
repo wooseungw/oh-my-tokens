@@ -66,6 +66,10 @@ const OMT_COMMANDS = {
     template: "/omt limits",
     description: "Show per-provider token limits by time window (hourly/daily/weekly/monthly).",
   },
+  omt_setting: {
+    template: "/omt setting",
+    description: "View or change plugin settings in opencode.json.",
+  },
 } as const;
 
 const COMMAND_ARGS: Readonly<Record<string, string>> = {
@@ -78,6 +82,7 @@ const COMMAND_ARGS: Readonly<Record<string, string>> = {
   omt_status: "status",
   omt_rebuild: "rebuild",
   omt_limits: "limits",
+  omt_setting: "setting",
 };
 
 export function getSidebarItems(mode: DisplayMode) {
@@ -136,7 +141,15 @@ export const OhMyTokensPlugin: Plugin = async (input) => {
     "command.execute.before": async (commandInput, _output) => {
       const fixedArgs = COMMAND_ARGS[commandInput.command];
       if (fixedArgs === undefined) return;
-      const args = commandInput.command === "omt" ? commandInput.arguments : fixedArgs;
+      let args: string;
+      if (commandInput.command === "omt") {
+        args = commandInput.arguments;
+      } else if (commandInput.command === "omt_setting") {
+        const trailing = commandInput.arguments?.trim() ?? "";
+        args = trailing.length > 0 ? `setting ${trailing}` : "setting";
+      } else {
+        args = fixedArgs;
+      }
       const result = handleOmtCommand(args, commandInput.sessionID);
       await injectRawOutput(commandInput.sessionID, result.text);
       handled();
