@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
+import pkg from "../../package.json";
 import { checkBudget, formatBudgetAlert, getBudgetConfig } from "../analytics/budget";
 import { getResolvedProviderConfig, hasAnyProviderLimits } from "../analytics/plans";
 import { getLiveProviders, getLiveQuota } from "../analytics/quota";
@@ -20,7 +21,7 @@ import { formatTokens } from "./formatter";
 
 const SECTION_RULE = "═══════════════════════════════════════";
 const BAR_WIDTH = 16;
-const PLUGIN_VERSION = "0.1.0";
+const PLUGIN_VERSION = pkg.version;
 
 interface CountRow {
   count: number;
@@ -125,8 +126,8 @@ function findTodayTotal(rows: RollupRow[]): UsageTotals {
     );
 }
 
-function formatUsageLine(label: string, percent: number, tokens: number): string {
-  return `  ${label.padEnd(10, " ")} ${buildBar(percent)} ${`${percent.toFixed(0)}%`.padStart(4, " ")}   ${formatTokens(tokens).padStart(6, " ")} tok`;
+function formatUsageLine(label: string, percent: number, tokens: number, labelWidth = 10): string {
+  return `  ${label.padEnd(labelWidth)} ${buildBar(percent)} ${`${percent.toFixed(0)}%`.padStart(4)}   ${formatTokens(tokens).padStart(6)} tok`;
 }
 
 function createCommandTextPart(text: string): { type: "text"; text: string } {
@@ -136,7 +137,12 @@ function createCommandTextPart(text: string): { type: "text"; text: string } {
   };
 }
 
-function buildProviderSectionHeader(name: string): string {
+function buildProviderSectionHeader(name: string, tokLabel?: string): string {
+  if (tokLabel !== undefined) {
+    const HEADER_WIDTH = 42;
+    const dashFill = Math.max(0, HEADER_WIDTH - 10 - name.length - tokLabel.length);
+    return `─── ${name} ─── ${tokLabel} today ${"─".repeat(dashFill)}`;
+  }
   const HEADER_WIDTH = 38;
   const dashFill = Math.max(0, HEADER_WIDTH - 5 - name.length);
   return `─── ${name} ${"─".repeat(dashFill)}`;
@@ -175,27 +181,11 @@ function buildProviderWeeklyQuotaLine(
 
 function buildProviderBlock(
   name: string,
-  todayRow: RollupRow | undefined,
-  weekRow: RollupRow | undefined,
-  allTodayTotal: number,
-  allWeekTotal: number,
+  todayTok: number | undefined,
   liveQuota: ReturnType<typeof getLiveQuota>,
 ): string[] {
-  const lines: string[] = [buildProviderSectionHeader(name)];
-
-  if (todayRow !== undefined) {
-    const tok = totalTokens(todayRow);
-    const pct = allTodayTotal > 0 ? (tok / allTodayTotal) * 100 : 0;
-    lines.push(
-      `  today    ${buildBar(pct)} ${`${Math.round(pct)}%`.padStart(4)}  ${formatTokens(tok).padStart(7)} tok`,
-    );
-  } else if (weekRow !== undefined) {
-    const tok = totalTokens(weekRow);
-    const pct = allWeekTotal > 0 ? (tok / allWeekTotal) * 100 : 0;
-    lines.push(
-      `  this wk  ${buildBar(pct)} ${`${Math.round(pct)}%`.padStart(4)}  ${formatTokens(tok).padStart(7)} tok`,
-    );
-  }
+  const tokLabel = todayTok !== undefined && todayTok > 0 ? formatTokens(todayTok) : undefined;
+  const lines: string[] = [buildProviderSectionHeader(name, tokLabel)];
 
   if (liveQuota?.windows) {
     const { windows } = liveQuota;
@@ -272,19 +262,6 @@ function buildTodaySummary(rows: RollupRow[]): string {
   const todayMap = new Map(providerRows.map((r) => [r.name, r]));
 
   const liveProviders = getLiveProviders();
-  const weekRows = getWeekProviderRollups();
-  const weekMap = new Map(weekRows.map((r) => [r.name, r]));
-  const weekTotal = weekRows.reduce((sum, r) => sum + totalTokens(r), 0);
-
-  const allProviderNames = Array.from(
-    new Set([...providerRows.map((r) => r.name), ...liveProviders, ...weekRows.map((r) => r.name)]),
-  ).sort((a, b) => {
-    const aRow = todayMap.get(a);
-    const bRow = todayMap.get(b);
-    return (
-      (bRow !== undefined ? totalTokens(bRow) : 0) - (aRow !== undefined ? totalTokens(aRow) : 0)
-    );
-  });
 
   const alertCfg = {
     daily: getDailyBudget() ?? undefined,
@@ -293,19 +270,27 @@ function buildTodaySummary(rows: RollupRow[]): string {
   };
   const alert = formatBudgetAlert(checkBudget(alertCfg));
 
+  const labelWidth = Math.max(10, ...providerRows.map((r) => r.name.length));
   const pct = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
   const summaryBody = [
     "oh-my-tokens — Today's Summary",
-    ...allProviderNames.flatMap((name) =>
-      buildProviderBlock(
+    ...liveProviders.flatMap((name) => {
+      const row = todayMap.get(name);
+      return buildProviderBlock(
         name,
-        todayMap.get(name),
-        weekMap.get(name),
-        total,
-        weekTotal,
+        row !== undefined ? totalTokens(row) : undefined,
         getLiveQuota(name),
-      ),
-    ),
+      );
+    }),
+    ...(providerRows.length > 0
+      ? [
+          "─── Today ──────────────────────────",
+          ...providerRows.map((row) => {
+            const tok = totalTokens(row);
+            return formatUsageLine(row.name, total > 0 ? (tok / total) * 100 : 0, tok, labelWidth);
+          }),
+        ]
+      : []),
     "─── Breakdown ──────────────────────",
     `  🧠 think  ${formatTokens(todayTotal.think).padStart(6)} (${`${pct(todayTotal.think)}%`.padStart(3)})   💬 chat  ${formatTokens(todayTotal.chat).padStart(6)} (${`${pct(todayTotal.chat)}%`.padStart(3)})`,
     `  ⌨️ code   ${formatTokens(todayTotal.code).padStart(6)} (${`${pct(todayTotal.code)}%`.padStart(3)})   📥 input ${formatTokens(todayTotal.inp).padStart(6)} (${`${pct(todayTotal.inp)}%`.padStart(3)})`,
@@ -321,6 +306,10 @@ function buildAgentSummary(rows: RollupRow[]): string {
     .filter((row) => row.kind === "agent")
     .sort((left, right) => totalTokens(right) - totalTokens(left));
   const total = agents.reduce((sum, row) => sum + totalTokens(row), 0);
+  const labelWidth = Math.max(
+    10,
+    ...agents.map((row) => (row.count > 1 ? `${row.name} ×${row.count}` : row.name).length),
+  );
 
   return [
     "oh-my-tokens — Agent Usage",
@@ -330,7 +319,7 @@ function buildAgentSummary(rows: RollupRow[]): string {
       const agentTotal = totalTokens(row);
       const percent = total > 0 ? (agentTotal / total) * 100 : 0;
       const countLabel = row.count > 1 ? `${row.name} ×${row.count}` : row.name;
-      return formatUsageLine(countLabel, percent, agentTotal);
+      return formatUsageLine(countLabel, percent, agentTotal, labelWidth);
     }),
     SECTION_RULE,
   ].join("\n");
