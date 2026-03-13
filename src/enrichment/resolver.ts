@@ -1,11 +1,9 @@
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
-
-import type { ProviderQuota } from "./providers";
-
 import { getDataDirCandidates } from "../paths";
 import { EnrichmentCache } from "./cache";
+import type { ProviderQuota } from "./providers";
 import { ENRICHMENT_PROVIDERS } from "./providers";
 
 export type EnrichmentMode = "off" | "auto" | "manual" | "opencode-quota";

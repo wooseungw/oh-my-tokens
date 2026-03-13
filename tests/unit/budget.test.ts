@@ -2,13 +2,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { RollupRow } from "../../src/storage/rollup";
 
-const { getMonthTotalMock, getTodayRollupsMock, getWeekTotalMock, getRollupsMock, queryOneMock } = vi.hoisted(() => ({
-  getMonthTotalMock: vi.fn(),
-  getTodayRollupsMock: vi.fn(),
-  getWeekTotalMock: vi.fn(),
-  getRollupsMock: vi.fn(),
-  queryOneMock: vi.fn(),
-}));
+const { getMonthTotalMock, getTodayRollupsMock, getWeekTotalMock, getRollupsMock, queryOneMock } =
+  vi.hoisted(() => ({
+    getMonthTotalMock: vi.fn(),
+    getTodayRollupsMock: vi.fn(),
+    getWeekTotalMock: vi.fn(),
+    getRollupsMock: vi.fn(),
+    queryOneMock: vi.fn(),
+  }));
 vi.mock("../../src/storage/rollup", () => ({
   getMonthTotal: getMonthTotalMock,
   getTodayRollups: getTodayRollupsMock,
@@ -107,7 +108,6 @@ describe("budget config store", () => {
     expect(getBudgetConfig().daily).toBeUndefined();
   });
 });
-
 
 describe("budget reset period", () => {
   afterEach(() => setBudgetConfig({}));

@@ -1,12 +1,10 @@
 import { describe, expect, it } from "vitest";
-
-import type { RollupRow } from "../../src/storage/rollup";
-
 import {
   aggregateByAgent,
   aggregateByDate,
   aggregateByProvider,
 } from "../../src/analytics/aggregator";
+import type { RollupRow } from "../../src/storage/rollup";
 
 function createRow(overrides: Partial<RollupRow>): RollupRow {
   return {

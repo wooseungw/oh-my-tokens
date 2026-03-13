@@ -24,11 +24,7 @@ function getSession(sessionId: string): SessionInfo | null {
   );
 }
 
-export function upsertSession(info: {
-  id: string;
-  parentId?: string;
-  agent?: string;
-}): void {
+export function upsertSession(info: { id: string; parentId?: string; agent?: string }): void {
   execute(
     `
       INSERT INTO sessions (id, parent_id, agent, status)

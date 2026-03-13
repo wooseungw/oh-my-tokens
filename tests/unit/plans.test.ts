@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
-  KNOWN_PLANS,
   getConfiguredProviderNames,
   getResolvedProviderConfig,
   hasAnyProviderLimits,
+  KNOWN_PLANS,
   lookupPlan,
   setProviderConfigs,
 } from "../../src/analytics/plans";

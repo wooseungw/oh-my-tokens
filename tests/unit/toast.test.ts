@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { type ToastData, formatToastMessage, showToast } from "../../src/ui/toast";
+import { formatToastMessage, showToast, type ToastData } from "../../src/ui/toast";
 
 const sampleToast: ToastData = {
   think: 820,

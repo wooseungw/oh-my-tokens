@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+
 const { clientPromptMock, createPipelineHooksMock, handleOmtCommandMock, runBackfillMock } =
   vi.hoisted(() => ({
     clientPromptMock: vi.fn(() => Promise.resolve({})),
@@ -17,6 +18,7 @@ vi.mock("../../src/ui/commands", () => ({
 }));
 
 import { OhMyTokensPlugin } from "../../src/index";
+
 describe("OhMyTokensPlugin", () => {
   it("exports pipeline hooks and starts backfill", async () => {
     const input = { client: { tui: {}, session: { prompt: clientPromptMock } } };

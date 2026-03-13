@@ -4,10 +4,11 @@
  * Automatically registers "oh-my-tokens" in the user's opencode.json plugin list.
  * Runs after `npm install oh-my-tokens` or `npm install -g oh-my-tokens`.
  */
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join, dirname } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+
 const PLUGIN_NAME = "oh-my-tokens";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageRoot = join(__dirname, "..");

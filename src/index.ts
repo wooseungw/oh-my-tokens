@@ -8,7 +8,7 @@ import { type EnrichmentConfig, normalizeMode, resolveEnrichment } from "./enric
 import { createPipelineHooks } from "./pipeline";
 import { runBackfill } from "./storage/backfill";
 import { handleOmtCommand } from "./ui/commands";
-import { type DisplayMode, buildSidebarItems } from "./ui/sidebar";
+import { buildSidebarItems, type DisplayMode } from "./ui/sidebar";
 
 let _enrichmentConfig: EnrichmentConfig = { mode: "off" };
 

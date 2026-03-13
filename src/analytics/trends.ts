@@ -1,4 +1,4 @@
-import { type RollupRow, getRollups } from "../storage/rollup";
+import { getRollups, type RollupRow } from "../storage/rollup";
 import { formatTokens } from "../ui/formatter";
 import { dateKeyFromMs } from "../utils";
 import { aggregateByDate } from "./aggregator";

@@ -1,12 +1,12 @@
 import { getLiveProviders, getLiveQuota } from "../analytics/quota";
 import type { ProviderQuota } from "../enrichment/providers";
 import {
-  type RollupRow,
   getMonthProviderRollups,
   getMonthTotal,
   getSessionTotals,
   getTodayRollups,
   getWeekTotal,
+  type RollupRow,
 } from "../storage/rollup";
 import { formatTokens } from "./formatter";
 
