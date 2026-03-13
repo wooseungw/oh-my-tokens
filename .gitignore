@@ -1,0 +1,30 @@
+node_modules/
+dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editors
+.DS_Store
+.vscode/
+.idea/
+
+# Build artifacts
+*.tsbuildinfo
+coverage/
+
+# Secrets
+.env
+.env.*
+.npmrc
+
+# OpenCode local
+opencode.json
+oh-my-tokens.db
+oh-my-tokens.db-wal
+oh-my-tokens.db-shm
+
+# Reference / scratch
+references/
+AGENTS.md

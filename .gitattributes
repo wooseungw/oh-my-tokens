@@ -1,0 +1,10 @@
+# Line ending normalization - all text files as LF
+* text=auto eol=lf
+
+# Binary files - no conversion
+*.png binary
+*.jpg binary
+*.ico binary
+*.db binary
+*.db-wal binary
+*.db-shm binary

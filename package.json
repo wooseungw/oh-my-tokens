@@ -1,0 +1,51 @@
+{
+  "name": "oh-my-tokens",
+  "version": "0.1.0",
+  "description": "OpenCode plugin: per-provider, per-agent, per-task-type token usage tracking and visualization",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "format": "biome format --write .",
+    "lint": "biome lint --write .",
+    "check": "biome check --write .",
+    "check:ci": "biome ci .",
+    "prepare": "husky",
+    "verify:release-version": "node scripts/verify-release-version.mjs",
+    "pricing:refresh": "node scripts/refresh-modelsdev-pricing.mjs"
+  },
+  "keywords": ["opencode", "plugin", "tokens", "usage", "tracking", "analytics", "sidebar"],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "peerDependencies": {
+    "@opencode-ai/plugin": "^1.1.0"
+  },
+  "devDependencies": {
+    "@opencode-ai/plugin": "^1.1.14",
+    "typescript": "^5.8.0",
+    "@biomejs/biome": "^1.9.0",
+    "vitest": "^4.0.0",
+    "husky": "^9.1.0",
+    "lint-staged": "^16.0.0"
+  },
+  "dependencies": {}
+}

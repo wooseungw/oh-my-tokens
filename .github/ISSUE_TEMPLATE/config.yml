@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Contribution Guidelines
+    url: https://github.com/<owner>/oh-my-tokens/blob/main/CONTRIBUTING.md
+    about: Review contribution policy and PR checklist.

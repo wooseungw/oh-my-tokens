@@ -1,0 +1,70 @@
+name: Bug report
+description: Report a bug in oh-my-tokens
+title: "[bug]: "
+labels:
+  - bug
+body:
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-flight checks
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: I verified this on the current OpenCode release.
+          required: true
+
+  - type: input
+    id: opencode_version
+    attributes:
+      label: OpenCode version
+      placeholder: "1.2.15"
+    validations:
+      required: true
+
+  - type: input
+    id: plugin_version
+    attributes:
+      label: oh-my-tokens version
+      placeholder: "0.1.0"
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Bug summary
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Configure ...
+        2. Run ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs/output
+      description: Paste /omt status output when relevant.
+      render: shell
