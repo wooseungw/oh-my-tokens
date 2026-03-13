@@ -647,31 +647,35 @@ function buildSettingDisplay(configPath: string): string {
   const cfg = readRawPluginConfig(configPath);
   const budget = (cfg.budget as Record<string, unknown>) ?? {};
   const toast = (cfg.toast as Record<string, unknown>) ?? {};
-  const row = (key: string, val: unknown) => `  ${key.padEnd(24)} ${fmtVal(val)}`;
+  const KEY_W = 24;
+  const VAL_W = 14;
+  const row = (key: string, val: unknown, hint: string) => {
+    const k = key.padEnd(KEY_W);
+    const v = fmtVal(val).padEnd(VAL_W);
+    return `  ${k} ${v}  ${hint}`;
+  };
   return [
     "oh-my-tokens — Settings",
     SECTION_RULE,
     `Config   ${configPath}`,
     "",
-    row("display", cfg.display),
-    row("unit", cfg.unit),
-    row("enrichment", cfg.enrichment),
-    row("lang", cfg.lang),
-    row("retention", cfg.retention !== undefined ? `${cfg.retention} days` : undefined),
+    row("display", cfg.display, "compact | normal | extend"),
+    row("unit", cfg.unit, "tokens | cost"),
+    row("enrichment", cfg.enrichment, "off | auto | manual | opencode-quota"),
+    row("lang", cfg.lang, "auto | en | ko | ja | zh"),
+    row("retention", cfg.retention, "<number> (days)"),
     "─── Budget ─────────────────────────────",
-    row("budget.daily", budget.daily),
-    row("budget.weekly", budget.weekly),
-    row("budget.monthly", budget.monthly),
-    row("budget.timezone", budget.timezone),
-    row("budget.dailyResetHour", budget.dailyResetHour),
-    row("budget.weeklyResetDay", budget.weeklyResetDay),
+    row("budget.daily", budget.daily, "<number> (tokens)"),
+    row("budget.weekly", budget.weekly, "<number> (tokens)"),
+    row("budget.monthly", budget.monthly, "<number> (tokens)"),
+    row("budget.timezone", budget.timezone, "IANA timezone  e.g. Asia/Seoul"),
+    row("budget.dailyResetHour", budget.dailyResetHour, "0–23"),
+    row("budget.weeklyResetDay", budget.weeklyResetDay, "monday | tuesday | ... | sunday"),
     "─── Toast ───────────────────────────────",
-    row("toast.enabled", toast.enabled),
-    row("toast.durationMs", toast.durationMs),
+    row("toast.enabled", toast.enabled, "true | false"),
+    row("toast.durationMs", toast.durationMs, "<number> (ms)"),
     "",
     "Set:  /omt setting <key> <value>",
-    "e.g.: /omt setting budget.daily 500000",
-    "      /omt setting budget.timezone Asia/Seoul",
     SECTION_RULE,
   ].join("\n");
 }
