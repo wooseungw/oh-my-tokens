@@ -8,9 +8,9 @@
 
 ## Recent Updates
 
+- `feat` Implement unit=cost display mode for /omt, /omt agents, and /omt trend
 - `feat` Add TOKEN MIX ratio section to /omt trend
 - `feat` Add /omt hours command — hourly token usage heatmap
-- `feat` Add /omt models command — model-level token breakdown
 
 ## Preview
 

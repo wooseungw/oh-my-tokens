@@ -52,11 +52,14 @@ export function formatUsageLine(
   tokens: number,
   labelWidth = 10,
   textMode = false,
+  costStr?: string,
 ): string {
+  const valueStr =
+    costStr !== undefined ? costStr.padStart(7) : `${formatTokens(tokens).padStart(6)} tok`;
   if (textMode) {
-    return `  ${padVisualEnd(label, labelWidth)}   ${formatTokens(tokens).padStart(6)} tok  (${percent.toFixed(0)}%)`;
+    return `  ${padVisualEnd(label, labelWidth)}   ${valueStr}  (${percent.toFixed(0)}%)`;
   }
-  return `  ${padVisualEnd(label, labelWidth)} ${buildBar(percent)} ${`${percent.toFixed(0)}%`.padStart(4)}   ${formatTokens(tokens).padStart(6)} tok`;
+  return `  ${padVisualEnd(label, labelWidth)} ${buildBar(percent)} ${`${percent.toFixed(0)}%`.padStart(4)}   ${valueStr}`;
 }
 
 export function buildProviderSectionHeader(name: string, tokLabel?: string): string {

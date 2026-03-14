@@ -1,8 +1,9 @@
 import { checkBudget, formatBudgetAlert, getBudgetConfig } from "../../analytics/budget";
 import { getLiveProviders, getLiveQuota } from "../../analytics/quota";
 import { computeTotalTokens } from "../../analytics/token-math";
+import { getUnitSetting } from "../../config/reader";
 import type { RollupRow } from "../../storage/rollup";
-import { formatTokens } from "../formatter";
+import { formatCost, formatTokens } from "../formatter";
 import {
   BAR_WIDTH,
   buildBar,
@@ -210,6 +211,7 @@ export function buildTodaySummary(rows: RollupRow[], textMode = false): string {
   const todayTotal = findTodayTotal(rows);
   const total = computeTotalTokens(todayTotal);
   const cacheTotal = todayTotal.cache_r + todayTotal.cache_w;
+  const costMode = getUnitSetting() === "cost";
 
   const providerRows = rows
     .filter((row) => row.kind === "provider")
@@ -245,12 +247,14 @@ export function buildTodaySummary(rows: RollupRow[], textMode = false): string {
           buildSectionDivider("Today"),
           ...providerRows.map((row) => {
             const tok = computeTotalTokens(row);
+            const costStr = costMode ? formatCost(row.cost) : undefined;
             return formatUsageLine(
               row.name,
               total > 0 ? (tok / total) * 100 : 0,
               tok,
               labelWidth,
               textMode,
+              costStr,
             );
           }),
         ]

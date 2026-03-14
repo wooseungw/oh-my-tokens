@@ -1,15 +1,18 @@
 import {
   detectSpikes,
   formatTrendChart,
+  getDailyCosts,
   getDailyTrend,
   getTaskTypeTrend,
   getWowChange,
 } from "../../analytics/trends";
+import { getUnitSetting } from "../../config/reader";
 
 import { SECTION_RULE } from "../render";
 
 export function buildTrendSummary(): string {
   const points = getDailyTrend();
+  const costByDate = getUnitSetting() === "cost" ? getDailyCosts(points.length) : undefined;
   const wow = getWowChange();
   const spikes = detectSpikes(points);
   const taskMix = getTaskTypeTrend();
@@ -27,7 +30,7 @@ export function buildTrendSummary(): string {
     "oh-my-tokens — 7-Day Trend",
     SECTION_RULE,
     "DAILY USAGE",
-    formatTrendChart(points),
+    formatTrendChart(points, costByDate),
     SECTION_RULE,
     "TOKEN MIX",
     ...mixLines,

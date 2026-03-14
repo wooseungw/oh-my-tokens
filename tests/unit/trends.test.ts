@@ -13,6 +13,7 @@ vi.mock("../../src/storage/rollup", () => ({
 import {
   detectSpikes,
   formatTrendChart,
+  getDailyCosts,
   getDailyTrend,
   getTaskTypeTrend,
   getWowChange,
@@ -142,6 +143,52 @@ describe("analytics trends", () => {
         "  2026-03-12  ░░░░░░░░░░░░       0",
       ].join("\n"),
     );
+  });
+
+  it("formats the trend chart with costs when provided", () => {
+    expect(
+      formatTrendChart(
+        [
+          { date: "2026-03-10", total: 12_000 },
+          { date: "2026-03-11", total: 24_000 },
+          { date: "2026-03-12", total: 0 },
+        ],
+        new Map([
+          ["2026-03-10", 1.25],
+          ["2026-03-11", 3.5],
+          ["2026-03-12", 0],
+        ]),
+      ),
+    ).toBe(
+      [
+        "  2026-03-10  ██████░░░░░░    $1.25",
+        "  2026-03-11  ████████████    $3.50",
+        "  2026-03-12  ░░░░░░░░░░░░    $0.00",
+      ].join("\n"),
+    );
+  });
+
+  it("returns per-day costs with zero-filled missing days", () => {
+    getRollupsMock.mockReturnValue([
+      {
+        ...createTotalRow("2026-03-06", 100),
+        cost: 1.25,
+      },
+      {
+        ...createTotalRow("2026-03-08", 250),
+        cost: 2.5,
+      },
+    ]);
+
+    expect(Array.from(getDailyCosts().entries())).toEqual([
+      ["2026-03-06", 1.25],
+      ["2026-03-07", 0],
+      ["2026-03-08", 2.5],
+      ["2026-03-09", 0],
+      ["2026-03-10", 0],
+      ["2026-03-11", 0],
+      ["2026-03-12", 0],
+    ]);
   });
 
   describe("getTaskTypeTrend", () => {

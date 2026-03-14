@@ -1,5 +1,5 @@
 import { getRollups, type RollupRow } from "../storage/rollup";
-import { formatTokens } from "../ui/formatter";
+import { formatCost, formatTokens } from "../ui/formatter";
 import { dateKeyFromMs } from "../utils";
 import { aggregateByDate } from "./aggregator";
 import { computeTotalTokens } from "./token-math";
@@ -48,21 +48,15 @@ function getDateRange(days: number): { from: string; to: string; keys: string[] 
   };
 }
 
-function getDailyTotals(rows: RollupRow[]): Map<string, number> {
+function getDailyUsage(rows: RollupRow[]) {
   const totalRows = rows.filter((row) => row.kind === "total" && row.name === "*");
 
   if (totalRows.length > 0) {
-    const totalsByDate = aggregateByDate(totalRows);
-    return new Map(
-      Array.from(totalsByDate.entries(), ([date, usage]) => [date, usage.totalTokens]),
-    );
+    return aggregateByDate(totalRows);
   }
 
   const providerRows = rows.filter((row) => row.kind === "provider");
-  const providerTotalsByDate = aggregateByDate(providerRows);
-  return new Map(
-    Array.from(providerTotalsByDate.entries(), ([date, usage]) => [date, usage.totalTokens]),
-  );
+  return aggregateByDate(providerRows);
 }
 
 function getWeekWindow(offsetWeeks: number): { from: string; to: string } {
@@ -102,12 +96,19 @@ function buildBar(total: number, maxTotal: number): string {
 
 export function getDailyTrend(days = 7): TrendPoint[] {
   const { from, to, keys } = getDateRange(days);
-  const totalsByDate = getDailyTotals(getRollups(from, to));
+  const usageByDate = getDailyUsage(getRollups(from, to));
 
   return keys.map((date) => ({
     date,
-    total: totalsByDate.get(date) ?? 0,
+    total: usageByDate.get(date)?.totalTokens ?? 0,
   }));
+}
+
+export function getDailyCosts(days = 7): Map<string, number> {
+  const { from, to, keys } = getDateRange(days);
+  const usageByDate = getDailyUsage(getRollups(from, to));
+
+  return new Map(keys.map((date) => [date, usageByDate.get(date)?.cost ?? 0]));
 }
 
 export function getWowChange(): {
@@ -150,13 +151,20 @@ export function detectSpikes(points: TrendPoint[]): SpikeResult[] {
     .filter((point) => point.zScore > SPIKE_Z_SCORE_THRESHOLD);
 }
 
-export function formatTrendChart(points: TrendPoint[]): string {
+export function formatTrendChart(
+  points: TrendPoint[],
+  costByDate?: ReadonlyMap<string, number>,
+): string {
   const maxTotal = points.reduce((max, point) => Math.max(max, point.total), 0);
 
   return points
     .map(
       (point) =>
-        `  ${point.date}  ${buildBar(point.total, maxTotal)}  ${formatTokens(point.total).padStart(6, " ")}`,
+        `  ${point.date}  ${buildBar(point.total, maxTotal)}  ${
+          costByDate !== undefined
+            ? formatCost(costByDate.get(point.date) ?? 0).padStart(7)
+            : formatTokens(point.total).padStart(6, " ")
+        }`,
     )
     .join("\n");
 }
