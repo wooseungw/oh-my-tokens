@@ -8,9 +8,9 @@
 
 ## Recent Updates
 
+- `feat` Add /omt models command — model-level token breakdown
 - `feat` Add /omt sessions command — top sessions by token usage
 - `fix` Visual-aware padding for emoji labels, unified bar column per command
-- `feat` Add formatCost and getUnitSetting for cost display mode
 
 ## Preview
 
@@ -75,14 +75,14 @@ WoW  +18.2% (this week vs last week)
 2. **Restart** OpenCode — postinstall automatically registers the plugin in `opencode.json`, detects your timezone, and creates `oh-my-tokens.json` next to your `opencode.json`.
 3. **Type `/omt`** in any chat session to see today's token summary with live provider quotas.
 
-Use `/omt agents` to see per-agent breakdowns, `/omt sessions` for top session activity, `/omt trend` for 7-day charts, or `/omt limits` to check provider quota windows directly.
+Use `/omt agents` to see per-agent breakdowns, `/omt models` for model-level usage, `/omt sessions` for top session activity, `/omt trend` for 7-day charts, or `/omt limits` to check provider quota windows directly.
 
 ## Features
 
 - **Provider Tracking** — Separate token usage by provider (Anthropic, OpenAI, Copilot, etc.)
 - **Agent Attribution** — Track which agent executed the request and which initiated it (execution vs. initiator)
 - **Token Classification** — Classify tokens by type: think, chat, code, input, cache
-- **Slash Commands** — `/omt`, `/omt agents`, `/omt sessions`, `/omt trend`, `/omt budget`, `/omt limits`, `/omt export`, `/omt status`, `/omt rebuild`
+- **Slash Commands** — `/omt`, `/omt agents`, `/omt models`, `/omt sessions`, `/omt trend`, `/omt budget`, `/omt limits`, `/omt export`, `/omt status`, `/omt rebuild`
 - **Budget Management** — Daily, weekly, monthly token budgets with alerts
 - **Trend Analysis** — 7-day trends, week-over-week changes, spike detection
 - **Enrichment Modes** — Optional provider quota integration (auto, manual, opencode-quota)
@@ -171,6 +171,7 @@ You can extend it with any of the following options:
 |---------|-------------|
 | `/omt` | Today's summary with live provider quotas, token classification, and budget status |
 | `/omt agents` | Agent-by-agent breakdown with agent×model cross-analysis |
+| `/omt models` | Model-by-model token breakdown for today |
 | `/omt sessions` | Top 15 sessions by token usage over the last 7 days |
 | `/omt trend` | 7-day trend chart with week-over-week changes and spike detection |
 | `/omt budget` | Budget status and remaining capacity |

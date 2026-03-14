@@ -34,6 +34,7 @@ const command = (template: string, description: string) => ({ template, descript
 const OMT_COMMANDS = {
   omt: command("/omt", "Show today's token summary with provider breakdown."),
   omt_agents: command("/omt agents", "Show agent-by-agent token usage."),
+  omt_models: command("/omt models", "Show model-level token breakdown for today."),
   omt_trend: command("/omt trend", "Show the 7-day token trend report."),
   omt_budget: command("/omt budget", "Show daily, weekly, and monthly token budget status."),
   omt_export: command("/omt export", "Export today's token usage as JSON."),
@@ -50,6 +51,7 @@ const OMT_COMMANDS = {
 const COMMAND_ARGS: Readonly<Record<string, string>> = {
   omt: "",
   omt_agents: "agents",
+  omt_models: "models",
   omt_trend: "trend",
   omt_budget: "budget",
   omt_export: "export",

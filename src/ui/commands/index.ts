@@ -7,6 +7,7 @@ import { buildAgentSummary } from "./agents";
 import { buildBudgetSummary } from "./budget-cmd";
 import { buildLimitsSummary } from "./limits";
 import { buildExportOutput, buildStatusOutput, handleOmtRebuild } from "./misc";
+import { buildModelsSummary } from "./models";
 import { buildSessionsSummary } from "./sessions";
 import { buildSettingCommandOutput } from "./setting";
 import { buildTodaySummary } from "./today";
@@ -44,6 +45,8 @@ function buildCommandText(
   switch (command.subcommand) {
     case "agents":
       return buildAgentSummary(getTodayRollups(), textMode);
+    case "models":
+      return buildModelsSummary(textMode);
     case "trend":
       return buildTrendSummary();
     case "budget":
