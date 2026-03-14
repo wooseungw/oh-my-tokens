@@ -9,9 +9,9 @@
 
 ## Recent Updates
 
+- `fix` Remove env var budget fallback in sidebar
 - `ci` Add Codecov coverage reporting and README badge
 - `ci` Add CodeQL security scanning workflow
-- `test` Add enrichment resolver e2e integration test
 
 ## Preview
 

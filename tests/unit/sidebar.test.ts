@@ -141,7 +141,7 @@ describe("sidebar", () => {
   });
 
   it("builds compact mode with reply, session, and budget-aware today rows", () => {
-    process.env.OMT_DAILY_BUDGET_TOKENS = "500000";
+    getBudgetConfigMock.mockReturnValue({ daily: 500000 });
 
     expect(buildSidebarItems("compact")).toEqual([
       { label: "Reply", value: "🧠820 💬0 ⌨️1.8K 📦24.0K", status: "info" },
@@ -164,7 +164,7 @@ describe("sidebar", () => {
   });
 
   it("builds text mode with same structure as extend when no live providers", () => {
-    process.env.OMT_DAILY_BUDGET_TOKENS = "100000";
+    getBudgetConfigMock.mockReturnValue({ daily: 100000 });
 
     expect(buildSidebarItems("text")).toEqual([
       { label: "Reply", value: "🧠820 💬0 ⌨️1.8K 📦24.0K", status: "info" },
@@ -187,7 +187,7 @@ describe("sidebar", () => {
   });
 
   it("builds extended mode with breakdown and period totals", () => {
-    process.env.OMT_DAILY_BUDGET_TOKENS = "100000";
+    getBudgetConfigMock.mockReturnValue({ daily: 100000 });
 
     expect(buildSidebarItems("extend")).toEqual([
       { label: "Reply", value: "🧠820 💬0 ⌨️1.8K 📦24.0K", status: "info" },
@@ -215,11 +215,10 @@ describe("sidebar", () => {
       getTodayRollupsMock.mockReturnValue([
         createRollup({ inp: 79, out: 0, think: 0, chat: 0, code: 0, cache_r: 0, cache_w: 0 }),
       ]);
-      process.env.OMT_DAILY_BUDGET_TOKENS = "100";
+      getBudgetConfigMock.mockReturnValue({ daily: 100 });
       const items = buildSidebarItems("compact");
       const todayItem = items.find((i) => i.label === "Today");
       expect(todayItem?.status).toBe("success");
-      process.env.OMT_DAILY_BUDGET_TOKENS = undefined;
     });
 
     it("returns warning status when usage is exactly 80% of budget", () => {
@@ -227,11 +226,10 @@ describe("sidebar", () => {
       getTodayRollupsMock.mockReturnValue([
         createRollup({ inp: 80, out: 0, think: 0, chat: 0, code: 0, cache_r: 0, cache_w: 0 }),
       ]);
-      process.env.OMT_DAILY_BUDGET_TOKENS = "100";
+      getBudgetConfigMock.mockReturnValue({ daily: 100 });
       const items = buildSidebarItems("compact");
       const todayItem = items.find((i) => i.label === "Today");
       expect(todayItem?.status).toBe("warning");
-      process.env.OMT_DAILY_BUDGET_TOKENS = undefined;
     });
 
     it("returns error status when usage is exactly 100% of budget", () => {
@@ -239,11 +237,10 @@ describe("sidebar", () => {
       getTodayRollupsMock.mockReturnValue([
         createRollup({ inp: 100, out: 0, think: 0, chat: 0, code: 0, cache_r: 0, cache_w: 0 }),
       ]);
-      process.env.OMT_DAILY_BUDGET_TOKENS = "100";
+      getBudgetConfigMock.mockReturnValue({ daily: 100 });
       const items = buildSidebarItems("compact");
       const todayItem = items.find((i) => i.label === "Today");
       expect(todayItem?.status).toBe("error");
-      process.env.OMT_DAILY_BUDGET_TOKENS = undefined;
     });
 
     it("returns info status when no budget configured", () => {

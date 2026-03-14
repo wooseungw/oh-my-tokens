@@ -76,18 +76,7 @@ let lastReply: ReplyState | null = null;
 
 function getBudgetLimit(): number | null {
   const cfg = getBudgetConfig();
-  if (cfg.daily !== undefined) {
-    return cfg.daily;
-  }
-
-  // env var fallback for backwards compat
-  const raw = process.env.OMT_DAILY_BUDGET_TOKENS ?? process.env.OH_MY_TOKENS_DAILY_BUDGET;
-  if (raw === undefined) {
-    return null;
-  }
-
-  const parsed = Number.parseInt(raw, 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  return cfg.daily !== undefined ? cfg.daily : null;
 }
 
 function getBudgetInfo(used: number): BudgetInfo {
