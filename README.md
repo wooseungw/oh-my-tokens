@@ -8,8 +8,8 @@
 
 ## Recent Updates
 
+- `chore` Release v0.1.18 — alignment fixes, auto-update notification, env var docs
 - `fix` Alignment — separator widths unified, `--` column in limits fixed
-- `chore` Remove sidebar keyword from npm package metadata
 - `feat` Auto-update notification — startup toast when newer version is available on npm
 
 ## Preview
