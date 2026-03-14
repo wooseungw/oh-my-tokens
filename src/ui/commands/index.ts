@@ -5,6 +5,7 @@ import { getTodayRollups } from "../../storage/rollup";
 
 import { buildAgentSummary } from "./agents";
 import { buildBudgetSummary } from "./budget-cmd";
+import { buildHoursSummary } from "./hours";
 import { buildLimitsSummary } from "./limits";
 import { buildExportOutput, buildStatusOutput, handleOmtRebuild } from "./misc";
 import { buildModelsSummary } from "./models";
@@ -61,6 +62,8 @@ function buildCommandText(
       return buildLimitsSummary(textMode);
     case "sessions":
       return buildSessionsSummary();
+    case "hours":
+      return buildHoursSummary();
     case "setting":
       return buildSettingCommandOutput(command.rawTail, applyConfig);
     default:

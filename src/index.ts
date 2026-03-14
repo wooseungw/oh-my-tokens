@@ -40,6 +40,7 @@ const OMT_COMMANDS = {
   omt_export: command("/omt export", "Export today's token usage as JSON."),
   omt_export_csv: command("/omt export csv", "Export today's token usage as CSV."),
   omt_sessions: command("/omt sessions", "Show top sessions by token usage (last 7 days)."),
+  omt_hours: command("/omt hours", "Show hourly token usage heatmap for today."),
   omt_status: command("/omt status", "Show plugin diagnostics and storage status."),
   omt_rebuild: command("/omt rebuild", "Rebuild rollup aggregates from recorded events."),
   omt_limits: command(
@@ -57,6 +58,7 @@ const COMMAND_ARGS: Readonly<Record<string, string>> = {
   omt_export: "export",
   omt_export_csv: "export csv",
   omt_sessions: "sessions",
+  omt_hours: "hours",
   omt_status: "status",
   omt_rebuild: "rebuild",
   omt_limits: "limits",

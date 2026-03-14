@@ -8,9 +8,9 @@
 
 ## Recent Updates
 
+- `feat` Add /omt hours command — hourly token usage heatmap
 - `feat` Add /omt models command — model-level token breakdown
 - `feat` Add /omt sessions command — top sessions by token usage
-- `fix` Visual-aware padding for emoji labels, unified bar column per command
 
 ## Preview
 
