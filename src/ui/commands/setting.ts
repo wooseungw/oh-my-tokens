@@ -88,10 +88,10 @@ function buildSettingDisplay(): string {
     SECTION_RULE,
     `Config   ${omtPath}`,
     "",
-    row("display", cfg.display, "compact | normal | extend | text"),
-    row("unit", cfg.unit, "tokens | cost"),
-    row("enrichment", cfg.enrichment, "off | auto | manual | opencode-quota"),
-    row("lang", cfg.lang, "auto | en | ko | ja | zh"),
+     row("display", cfg.display, "compact | normal | extend | text"),
+     row("unit", cfg.unit, "tokens | cost  [not yet implemented]"),
+     row("enrichment", cfg.enrichment, "off | auto | manual | opencode-quota"),
+     row("lang", cfg.lang, "auto | en | ko | ja | zh  [not yet implemented]"),
     row("retention", cfg.retention, "<number> (days)"),
     buildSectionDivider("Budget"),
     row("budget.daily", budget.daily, "<number> (tokens)"),
@@ -334,20 +334,21 @@ function buildUnknownSettingOutput(key: string): string {
 }
 
 function buildSettingHintOutput(key: string, spec: SettingSpec): string {
-  const hint = specHint(spec);
-  const example = specExample(spec);
-  const current = readCurrentSettingValue(getEffectivePluginConfig(), key);
-  const lines = [
-    "oh-my-tokens — Settings",
-    SECTION_RULE,
-    `  ${key.padEnd(24)} ${hint}`,
-    ...(current !== undefined ? [`  Current: ${String(current)}`] : []),
-    "",
-    `Usage:   /omt setting ${key} ${example}`,
-    SECTION_RULE,
-  ];
-  return lines.join("\n");
-}
+   const hint = specHint(spec);
+   const example = specExample(spec);
+   const current = readCurrentSettingValue(getEffectivePluginConfig(), key);
+   const notYetImplementedNote = (key === "unit" || key === "lang") ? "  [not yet implemented]" : "";
+   const lines = [
+     "oh-my-tokens — Settings",
+     SECTION_RULE,
+     `  ${key.padEnd(24)} ${hint}${notYetImplementedNote}`,
+     ...(current !== undefined ? [`  Current: ${String(current)}`] : []),
+     "",
+     `Usage:   /omt setting ${key} ${example}`,
+     SECTION_RULE,
+   ];
+   return lines.join("\n");
+ }
 
 function buildSettingSuccessOutput(
   key: string,
