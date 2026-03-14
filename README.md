@@ -8,9 +8,9 @@
 
 ## Recent Updates
 
+- `test` Add unit tests for migrations, sessions, and attribution
 - `test` Add unit coverage for storage backfill and DB wrappers
 - `test` Add unit coverage for update-check and auth watcher
-- `feat` Implement unit=cost display mode for /omt, /omt agents, and /omt trend
 
 ## Preview
 
