@@ -8,9 +8,9 @@
 
 ## Recent Updates
 
+- `test` Add postinstall migration flow integration test
 - `test` Add unit tests for migrations, sessions, and attribution
 - `test` Add unit coverage for storage backfill and DB wrappers
-- `test` Add unit coverage for update-check and auth watcher
 
 ## Preview
 
