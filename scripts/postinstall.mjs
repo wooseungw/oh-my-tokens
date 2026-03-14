@@ -88,6 +88,7 @@ function registerPlugin() {
   }
 
   const omtConfigPath = getOhMyTokensConfigPath(configPath);
+  migrateFromOpencodeJson(configPath, omtConfigPath);
   if (!existsSync(omtConfigPath)) {
     const omtConfig = { enrichment: "auto" };
     const tz = detectTimezone();
@@ -97,7 +98,6 @@ function registerPlugin() {
   } else {
     console.log(`[oh-my-tokens] Config already exists: ${omtConfigPath}`);
   }
-  migrateFromOpencodeJson(configPath, omtConfigPath);
 }
 
 const initCwd = process.env.INIT_CWD?.trim() || "";

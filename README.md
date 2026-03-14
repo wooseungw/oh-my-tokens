@@ -8,9 +8,9 @@
 
 ## Recent Updates
 
+- `test` Coverage thresholds — add v8 coverage reporters and baseline measurement to vitest config
 - `fix` Postinstall migration order — run migration check before creating default config file
 - `fix` Enrichment — pass providers config to resolver in manual mode
-- `chore` Release v0.1.18 — alignment fixes, auto-update notification, env var docs
 
 ## Preview
 
