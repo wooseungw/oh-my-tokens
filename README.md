@@ -9,9 +9,9 @@
 
 ## Recent Updates
 
+- `fix` Split unit/integration test runs in CI; integration tests only on Node 22+
 - `fix` Skip integration tests on Node < 22 (node:sqlite unavailable), run coverage on Node 22
 - `chore` Bump to 0.2.0, require @opencode-ai/plugin ^1.2.0
-- `fix` Remove env var budget fallback in sidebar
 
 ## Preview
 

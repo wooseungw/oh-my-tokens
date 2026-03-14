@@ -14,7 +14,14 @@ const { findOpenCodeDbPathMock } = vi.hoisted(() => ({
 }));
 
 vi.mock("bun:sqlite", async () => {
-  const { DatabaseSync } = await import("node:sqlite");
+  let DatabaseSync: typeof import("node:sqlite").DatabaseSync;
+  try {
+    const mod = await import("node:sqlite");
+    DatabaseSync = mod.DatabaseSync;
+  } catch {
+    // node:sqlite unavailable (Node < 22.5) — return stub; tests skipped via describeIf
+    return { Database: class {} };
+  }
 
   type TransactionFn = (...args: unknown[]) => unknown;
   type PreparedStatement = {

@@ -30,9 +30,13 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Test
-        run: npm test
-      
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Integration tests
+        if: matrix.node-version == '22.x'
+        run: npm run test:integration
+
       - name: Test with coverage
         if: matrix.os == 'ubuntu-latest' && matrix.node-version == '22.x'
         run: npm run test:coverage
