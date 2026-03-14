@@ -290,10 +290,7 @@ describe("rollup storage queries", () => {
     expect(rows[0].date).toBe("2026-03-12");
     expect(rows[0].inp).toBe(500);
     expect(rows[0].count).toBe(5);
-    expect(queryAllMock).toHaveBeenCalledWith(
-      expect.stringContaining("FROM events"),
-      "2026-03-12",
-    );
+    expect(queryAllMock).toHaveBeenCalledWith(expect.stringContaining("FROM events"), "2026-03-12");
   });
 
   it("handles NULL model as '(unknown)' in getModelRollups", () => {
@@ -337,10 +334,7 @@ describe("rollup storage queries", () => {
     expect(map.get(9)).toBe(1_200_000);
     expect(map.get(10)).toBe(800_000);
     expect(map.size).toBe(3);
-    expect(queryAllMock).toHaveBeenCalledWith(
-      expect.stringContaining("FROM events"),
-      "2026-03-12",
-    );
+    expect(queryAllMock).toHaveBeenCalledWith(expect.stringContaining("FROM events"), "2026-03-12");
   });
 
   it("returns empty Map when no events exist for getHourlyTotals", () => {
@@ -355,10 +349,7 @@ describe("rollup storage queries", () => {
 
     getModelRollups("2026-03-10");
 
-    expect(queryAllMock).toHaveBeenCalledWith(
-      expect.stringContaining("FROM events"),
-      "2026-03-10",
-    );
+    expect(queryAllMock).toHaveBeenCalledWith(expect.stringContaining("FROM events"), "2026-03-10");
   });
 
   it("accepts custom date for getHourlyTotals", () => {
@@ -366,9 +357,6 @@ describe("rollup storage queries", () => {
 
     getHourlyTotals("2026-03-10");
 
-    expect(queryAllMock).toHaveBeenCalledWith(
-      expect.stringContaining("FROM events"),
-      "2026-03-10",
-    );
+    expect(queryAllMock).toHaveBeenCalledWith(expect.stringContaining("FROM events"), "2026-03-10");
   });
 });

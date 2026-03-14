@@ -35,7 +35,8 @@
       "!**/dist",
       "!**/opencode-quota",
       "!**/*.min.json",
-      "!.sisyphus"
+      "!.sisyphus",
+      "!coverage"
     ]
   }
 }
