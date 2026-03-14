@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { findOhMyTokensConfigPathMock, findOpencodeConfigPathMock } = vi.hoisted(() => ({
   findOhMyTokensConfigPathMock: vi.fn(() => "/mock/oh-my-tokens.json"),

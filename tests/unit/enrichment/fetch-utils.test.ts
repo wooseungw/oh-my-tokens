@@ -49,10 +49,7 @@ describe("fetch-utils", () => {
   });
 
   it("safeFetch returns null on non-ok response", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({ ok: false, json: async () => ({}) }),
-    );
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, json: async () => ({}) }));
 
     await expect(safeFetch("http://example.com")).resolves.toBeNull();
 

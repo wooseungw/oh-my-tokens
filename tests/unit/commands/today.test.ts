@@ -11,8 +11,8 @@ vi.mock("../../../src/analytics/quota", () => ({
   getLiveQuota: vi.fn(() => null),
 }));
 
-import { buildTodaySummary } from "../../../src/ui/commands/today";
 import type { RollupRow } from "../../../src/storage/rollup";
+import { buildTodaySummary } from "../../../src/ui/commands/today";
 
 describe("buildTodaySummary", () => {
   it("should be a function", () => {
