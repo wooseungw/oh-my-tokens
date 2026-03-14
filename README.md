@@ -8,9 +8,9 @@
 
 ## Recent Updates
 
+- `ci` Add CodeQL security scanning workflow
 - `test` Add enrichment resolver e2e integration test
 - `test` Add storage migration and rollup e2e integration test
-- `test` Add postinstall migration flow integration test
 
 ## Preview
 
