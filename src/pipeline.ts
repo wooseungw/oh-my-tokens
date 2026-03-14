@@ -1,7 +1,6 @@
 import type { Hooks, PluginInput } from "@opencode-ai/plugin";
 import type { AssistantMessage, Event } from "@opencode-ai/sdk";
 
-import { computeTotalTokens } from "./analytics/token-math";
 import { getToastConfig } from "./config/reader";
 import { markCompacted, upsertSession } from "./storage/sessions";
 import { resolveAttribution } from "./tracking/attribution";
@@ -51,6 +50,24 @@ function buildToolHeuristic(mode: string): number {
   return isCodeMode(mode) ? 1 : 0;
 }
 
+function handleCompaction(properties: Event["properties"]): void {
+  const oldSessionId = readFirstStringField(properties, [
+    "sessionID",
+    "oldSessionID",
+    "fromSessionID",
+  ]);
+  const newSessionId = readFirstStringField(properties, [
+    "newSessionID",
+    "compactedSessionID",
+    "toSessionID",
+  ]);
+
+  if (oldSessionId !== undefined && newSessionId !== undefined) {
+    markCompacted(oldSessionId, newSessionId);
+    setCurrentSessionId(newSessionId);
+  }
+}
+
 export function createPipelineHooks(_input: PluginInput): Partial<Hooks> {
   return {
     event: async ({ event }: { event: Event }) => {
@@ -59,22 +76,7 @@ export function createPipelineHooks(_input: PluginInput): Partial<Hooks> {
       }
 
       if (event.type === "session.compacted") {
-        const oldSessionId = readFirstStringField(event.properties, [
-          "sessionID",
-          "oldSessionID",
-          "fromSessionID",
-        ]);
-        const newSessionId = readFirstStringField(event.properties, [
-          "newSessionID",
-          "compactedSessionID",
-          "toSessionID",
-        ]);
-
-        if (oldSessionId !== undefined && newSessionId !== undefined) {
-          markCompacted(oldSessionId, newSessionId);
-          setCurrentSessionId(newSessionId);
-        }
-
+        handleCompaction(event.properties);
         return;
       }
 
@@ -139,20 +141,12 @@ export function createPipelineHooks(_input: PluginInput): Partial<Hooks> {
         model: message.modelID,
       });
 
-      if (getToastConfig().enabled) {
+      if (getToastConfig().enabled && message.time.completed) {
         const toastData = {
           think: breakdown.think,
           chat: breakdown.chat,
           code: breakdown.code,
-          total: computeTotalTokens({
-            inp: message.tokens.input,
-            out: message.tokens.output,
-            think: breakdown.think,
-            chat: breakdown.chat,
-            code: breakdown.code,
-            cache_r: message.tokens.cache.read,
-            cache_w: message.tokens.cache.write,
-          }),
+          total: breakdown.think + breakdown.chat + breakdown.code,
           provider,
           model: message.modelID,
         };

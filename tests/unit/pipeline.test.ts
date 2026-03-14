@@ -9,6 +9,8 @@ const {
   resolveAttributionMock,
   setCurrentSessionIdMock,
   setLastReplyMock,
+  getToastConfigMock,
+  showToastMock,
 } = vi.hoisted(() => ({
   normalizeDisplayProviderMock: vi.fn(() => "anthropic"),
   classifyMock: vi.fn(() => ({ think: 12, chat: 0, code: 80 })),
@@ -18,6 +20,8 @@ const {
   resolveAttributionMock: vi.fn(() => ({ agent: "coder", initiator: "coder", depth: 0 })),
   setCurrentSessionIdMock: vi.fn(),
   setLastReplyMock: vi.fn(),
+  getToastConfigMock: vi.fn(() => ({ enabled: false, durationMs: 9000 })),
+  showToastMock: vi.fn(() => Promise.resolve()),
 }));
 
 vi.mock("../../src/tracking/normalizer", () => ({
@@ -46,6 +50,14 @@ vi.mock("../../src/ui/sidebar", () => ({
   setLastReply: setLastReplyMock,
 }));
 
+vi.mock("../../src/config/reader", () => ({
+  getToastConfig: getToastConfigMock,
+}));
+
+vi.mock("../../src/ui/toast", () => ({
+  showToast: showToastMock,
+}));
+
 import { createPipelineHooks } from "../../src/pipeline";
 
 describe("createPipelineHooks", () => {
@@ -58,6 +70,9 @@ describe("createPipelineHooks", () => {
     resolveAttributionMock.mockClear();
     setCurrentSessionIdMock.mockClear();
     setLastReplyMock.mockClear();
+    getToastConfigMock.mockClear();
+    showToastMock.mockClear();
+    getToastConfigMock.mockReturnValue({ enabled: false, durationMs: 9000 });
   });
 
   it("records assistant message updates", async () => {
@@ -177,5 +192,80 @@ describe("createPipelineHooks", () => {
 
     expect(markCompactedMock).toHaveBeenCalledWith("ses_1", "ses_2");
     expect(setCurrentSessionIdMock).toHaveBeenCalledWith("ses_2");
+  });
+
+  it("shows toast with output-only total on completed messages", async () => {
+    getToastConfigMock.mockReturnValue({ enabled: true, durationMs: 9000 });
+    const hooks = createPipelineHooks({} as never);
+
+    await hooks.event?.({
+      event: {
+        type: "message.updated",
+        properties: {
+          info: {
+            id: "msg_t1",
+            sessionID: "ses_1",
+            role: "assistant",
+            parentID: "msg_0",
+            modelID: "claude-sonnet-4",
+            providerID: "anthropic",
+            mode: "coder",
+            path: { cwd: "/workspace", root: "/workspace" },
+            cost: 0.1,
+            tokens: {
+              input: 500,
+              output: 80,
+              reasoning: 12,
+              cache: { read: 200, write: 50 },
+            },
+            time: { created: 1000, completed: 1500 },
+          },
+        },
+      },
+    });
+
+    expect(showToastMock).toHaveBeenCalledOnce();
+    expect(showToastMock).toHaveBeenCalledWith(expect.anything(), {
+      think: 12,
+      chat: 0,
+      code: 80,
+      total: 92,
+      provider: "anthropic",
+      model: "claude-sonnet-4",
+    });
+  });
+
+  it("skips toast for incomplete (streaming) messages", async () => {
+    getToastConfigMock.mockReturnValue({ enabled: true, durationMs: 9000 });
+    const hooks = createPipelineHooks({} as never);
+
+    await hooks.event?.({
+      event: {
+        type: "message.updated",
+        properties: {
+          info: {
+            id: "msg_t2",
+            sessionID: "ses_1",
+            role: "assistant",
+            parentID: "msg_0",
+            modelID: "claude-sonnet-4",
+            providerID: "anthropic",
+            mode: "coder",
+            path: { cwd: "/workspace", root: "/workspace" },
+            cost: 0,
+            tokens: {
+              input: 100,
+              output: 30,
+              reasoning: 0,
+              cache: { read: 0, write: 0 },
+            },
+            time: { created: 1000 },
+          },
+        },
+      },
+    });
+
+    expect(showToastMock).not.toHaveBeenCalled();
+    expect(recordEventMock).toHaveBeenCalled();
   });
 });

@@ -9,9 +9,9 @@
 
 ## Recent Updates
 
+- `fix` Toast: correct total to think+chat+code, only show on completed messages
 - `feat` Adaptive separator width — rules and dividers scale to widest content line
 - `test` Fix integration tests: remove stale vi.unmock, platform-aware postinstall env
-- `ci` Drop Node 18 (vitest/rolldown requires ≥20), fix Windows path separators in tests
 
 ## Preview
 
