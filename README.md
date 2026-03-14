@@ -8,9 +8,9 @@
 
 ## Recent Updates
 
+- `fix` Sidebar budget from config — read daily budget from config store instead of env vars
 - `test` Coverage thresholds — add v8 coverage reporters and baseline measurement to vitest config
 - `fix` Postinstall migration order — run migration check before creating default config file
-- `fix` Enrichment — pass providers config to resolver in manual mode
 
 ## Preview
 

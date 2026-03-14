@@ -1,3 +1,4 @@
+import { getBudgetConfig } from "../analytics/budget";
 import { getLiveProviders, getLiveQuota } from "../analytics/quota";
 import { computeTotalTokens } from "../analytics/token-math";
 import type { ProviderQuota } from "../enrichment/providers";
@@ -74,6 +75,12 @@ let currentSessionId: string | null = null;
 let lastReply: ReplyState | null = null;
 
 function getBudgetLimit(): number | null {
+  const cfg = getBudgetConfig();
+  if (cfg.daily !== undefined) {
+    return cfg.daily;
+  }
+
+  // env var fallback for backwards compat
   const raw = process.env.OMT_DAILY_BUDGET_TOKENS ?? process.env.OH_MY_TOKENS_DAILY_BUDGET;
   if (raw === undefined) {
     return null;

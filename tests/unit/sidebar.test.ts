@@ -10,11 +10,19 @@ const { getTodayRollupsMock, getSessionTotalsMock, getWeekTotalMock, getMonthTot
     getMonthTotalMock: vi.fn(),
   }));
 
+const { getBudgetConfigMock } = vi.hoisted(() => ({
+  getBudgetConfigMock: vi.fn(),
+}));
+
 vi.mock("../../src/storage/rollup", () => ({
   getTodayRollups: getTodayRollupsMock,
   getSessionTotals: getSessionTotalsMock,
   getWeekTotal: getWeekTotalMock,
   getMonthTotal: getMonthTotalMock,
+}));
+
+vi.mock("../../src/analytics/budget", () => ({
+  getBudgetConfig: getBudgetConfigMock,
 }));
 
 import { buildSidebarItems, setCurrentSessionId, setLastReply } from "../../src/ui/sidebar";
@@ -47,6 +55,8 @@ describe("sidebar", () => {
     getSessionTotalsMock.mockReset();
     getWeekTotalMock.mockReset();
     getMonthTotalMock.mockReset();
+    getBudgetConfigMock.mockReset();
+    getBudgetConfigMock.mockReturnValue({});
 
     getTodayRollupsMock.mockReturnValue([
       createRollup({ kind: "total", name: "*" }),
@@ -243,6 +253,14 @@ describe("sidebar", () => {
       const items = buildSidebarItems("compact");
       const todayItem = items.find((i) => i.label === "Today");
       expect(todayItem?.status).toBe("info");
+    });
+
+    it("reads budget from config store instead of env vars", () => {
+      getBudgetConfigMock.mockReturnValue({ daily: 500000 });
+      const items = buildSidebarItems("compact");
+      const todayItem = items.find((i) => i.label === "Today");
+      expect(todayItem?.value).toBe("115.5K / 500.0K (23%)");
+      expect(todayItem?.status).toBe("success");
     });
   });
 });
