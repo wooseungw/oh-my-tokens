@@ -9,9 +9,9 @@
 
 ## Recent Updates
 
+- `ci` Add pre-push hook (coverage + build), set fail-fast: false in CI matrix
 - `fix` Add missing @vitest/coverage-v8 dep, lower unreachable coverage thresholds
 - `fix` Fix quota bar alignment by adding VS16 to emojis and dynamic icon+label padding
-- `fix` Split unit/integration test runs in CI; integration tests only on Node 22+
 
 ## Preview
 
