@@ -14,6 +14,7 @@ import {
   detectSpikes,
   formatTrendChart,
   getDailyTrend,
+  getTaskTypeTrend,
   getWowChange,
 } from "../../src/analytics/trends";
 
@@ -141,5 +142,45 @@ describe("analytics trends", () => {
         "  2026-03-12  ░░░░░░░░░░░░       0",
       ].join("\n"),
     );
+  });
+
+  describe("getTaskTypeTrend", () => {
+    it("returns 7 points by default", () => {
+      getRollupsMock.mockReturnValue([]);
+
+      const points = getTaskTypeTrend();
+
+      expect(points).toHaveLength(7);
+    });
+
+    it("returns zero percentages when no data", () => {
+      getRollupsMock.mockReturnValue([]);
+
+      const points = getTaskTypeTrend();
+
+      for (const point of points) {
+        expect(point.thinkPct).toBe(0);
+        expect(point.chatPct).toBe(0);
+        expect(point.codePct).toBe(0);
+      }
+    });
+
+    it("computes rounded task-type percentages from total rows", () => {
+      getRollupsMock.mockReturnValue([
+        {
+          ...createTotalRow("2026-03-11", 0),
+          think: 9,
+          chat: 6,
+          code: 5,
+        },
+      ]);
+
+      expect(getTaskTypeTrend()).toContainEqual({
+        date: "2026-03-11",
+        thinkPct: 45,
+        chatPct: 30,
+        codePct: 25,
+      });
+    });
   });
 });

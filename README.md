@@ -8,9 +8,9 @@
 
 ## Recent Updates
 
+- `feat` Add TOKEN MIX ratio section to /omt trend
 - `feat` Add /omt hours command — hourly token usage heatmap
 - `feat` Add /omt models command — model-level token breakdown
-- `feat` Add /omt sessions command — top sessions by token usage
 
 ## Preview
 
@@ -61,6 +61,15 @@ DAILY USAGE
   2026-03-12  ████████████   6.1M
   2026-03-13  ██████░░░░░░   3.4M
   2026-03-14  ████░░░░░░░░   2.2M
+═══════════════════════════════════════
+TOKEN MIX
+  2026-03-08  🧠 45%  💬 30%  ⌨️ 25%
+  2026-03-09  🧠   —  💬 60%  ⌨️ 40%
+  2026-03-10  🧠   —  💬   —  ⌨️   —
+  2026-03-11  🧠 20%  💬 35%  ⌨️ 45%
+  2026-03-12  🧠 55%  💬 25%  ⌨️ 20%
+  2026-03-13  🧠 40%  💬 30%  ⌨️ 30%
+  2026-03-14  🧠 45%  💬 30%  ⌨️ 25%
 ═══════════════════════════════════════
 WoW  +18.2% (this week vs last week)
 ⚠️ Spike: 2026-03-12 (Z=2.3)
@@ -173,7 +182,7 @@ You can extend it with any of the following options:
 | `/omt agents` | Agent-by-agent breakdown with agent×model cross-analysis |
 | `/omt models` | Model-by-model token breakdown for today |
 | `/omt sessions` | Top 15 sessions by token usage over the last 7 days |
-| `/omt trend` | 7-day trend chart with week-over-week changes and spike detection |
+| `/omt trend` | 7-day trend chart with daily token mix ratios, week-over-week changes, and spike detection |
 | `/omt budget` | Budget status and remaining capacity |
 | `/omt export [json\|csv]` | Export usage data in JSON or CSV format |
 | `/omt status` | Diagnostic info (detected providers, database size, pricing data freshness) |

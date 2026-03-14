@@ -18,6 +18,13 @@ export interface SpikeResult {
   zScore: number;
 }
 
+export interface TaskTypeTrendPoint {
+  date: string;
+  thinkPct: number;
+  chatPct: number;
+  codePct: number;
+}
+
 function addLocalDays(date: Date, days: number): Date {
   const next = new Date(date);
   next.setDate(next.getDate() + days);
@@ -152,4 +159,33 @@ export function formatTrendChart(points: TrendPoint[]): string {
         `  ${point.date}  ${buildBar(point.total, maxTotal)}  ${formatTokens(point.total).padStart(6, " ")}`,
     )
     .join("\n");
+}
+
+export function getTaskTypeTrend(days = 7): TaskTypeTrendPoint[] {
+  const { from, to, keys } = getDateRange(days);
+  const rows = getRollups(from, to).filter((row) => row.kind === "total" && row.name === "*");
+
+  const byDate = new Map<string, { think: number; chat: number; code: number }>();
+  for (const row of rows) {
+    byDate.set(row.date, { think: row.think, chat: row.chat, code: row.code });
+  }
+
+  return keys.map((date) => {
+    const data = byDate.get(date);
+    if (!data) {
+      return { date, thinkPct: 0, chatPct: 0, codePct: 0 };
+    }
+
+    const total = data.think + data.chat + data.code;
+    if (total === 0) {
+      return { date, thinkPct: 0, chatPct: 0, codePct: 0 };
+    }
+
+    return {
+      date,
+      thinkPct: Math.round((data.think / total) * 100),
+      chatPct: Math.round((data.chat / total) * 100),
+      codePct: Math.round((data.code / total) * 100),
+    };
+  });
 }
