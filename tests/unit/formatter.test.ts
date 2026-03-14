@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatTokens } from "../../src/ui/formatter";
+import { formatCost, formatTokens } from "../../src/ui/formatter";
 
 describe("formatTokens", () => {
   it("returns small values as-is", () => {
@@ -15,5 +15,19 @@ describe("formatTokens", () => {
 
   it("formats millions with one decimal place", () => {
     expect(formatTokens(1_200_000)).toBe("1.2M");
+  });
+});
+
+describe("formatCost", () => {
+  it("formats zero as $0.00", () => {
+    expect(formatCost(0)).toBe("$0.00");
+  });
+
+  it("formats decimal values with two decimal places", () => {
+    expect(formatCost(1.5)).toBe("$1.50");
+  });
+
+  it("rounds to two decimal places", () => {
+    expect(formatCost(0.001)).toBe("$0.00");
   });
 });

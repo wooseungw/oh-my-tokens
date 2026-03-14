@@ -8,9 +8,9 @@
 
 ## Recent Updates
 
+- `feat` Add formatCost and getUnitSetting for cost display mode
 - `fix` Re-enable toast notifications, wire toast.enabled config
 - `feat` Add getModelRollups and getHourlyTotals query functions for model and hourly aggregates
-- `fix` Setting annotations — annotate unit/lang settings as not yet implemented
 
 ## Preview
 

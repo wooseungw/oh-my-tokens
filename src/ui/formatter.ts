@@ -9,3 +9,7 @@ export function formatTokens(n: number): string {
 
   return `${(n / 1_000_000).toFixed(1)}M`;
 }
+
+export function formatCost(usd: number): string {
+  return `$${usd.toFixed(2)}`;
+}
