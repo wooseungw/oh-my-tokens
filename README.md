@@ -8,9 +8,9 @@
 
 ## Recent Updates
 
+- `chore` Remove sidebar keyword from npm package metadata
 - `feat` Auto-update notification — startup toast when newer version is available on npm
 - `refactor` Separator alignment — all dividers unified to 42 chars across commands
-- `docs` README preview — replaced screenshot images with terminal output code blocks
 
 ## Preview
 
