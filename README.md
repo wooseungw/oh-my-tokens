@@ -8,9 +8,9 @@
 
 ## Recent Updates
 
+- `feat` Add getModelRollups and getHourlyTotals query functions for model and hourly aggregates
 - `fix` Setting annotations — annotate unit/lang settings as not yet implemented
 - `fix` Recorder — update rollup on reasoning/cache changes, not only inp+out
-- `fix` Windows auth paths — add APPDATA and LOCALAPPDATA support for auth.json discovery
 
 ## Preview
 

@@ -11,7 +11,9 @@ vi.mock("../../src/storage/db", () => ({
 }));
 
 import {
+  getHourlyTotals,
   getHourProviderTotals,
+  getModelRollups,
   getMonthProviderRollups,
   getMonthTotal,
   getRollups,
@@ -250,5 +252,123 @@ describe("rollup storage queries", () => {
   it("returns an empty Map when no events exist in the last hour", () => {
     queryAllMock.mockReturnValue([]);
     expect(getHourProviderTotals().size).toBe(0);
+  });
+
+  it("returns model-grouped aggregates from events table", () => {
+    vi.setSystemTime(new Date("2026-03-12T10:00:00"));
+    queryAllMock.mockReturnValue([
+      {
+        name: "claude-3-5-sonnet",
+        inp: 500,
+        out: 200,
+        think: 50,
+        chat: 150,
+        code: 0,
+        cache_r: 100,
+        cache_w: 20,
+        cost: 2.5,
+        count: 5,
+      },
+      {
+        name: "gpt-4",
+        inp: 300,
+        out: 100,
+        think: 0,
+        chat: 100,
+        code: 0,
+        cache_r: 0,
+        cache_w: 0,
+        cost: 1.2,
+        count: 3,
+      },
+    ]);
+
+    const rows = getModelRollups();
+    expect(rows).toHaveLength(2);
+    expect(rows[0].kind).toBe("model");
+    expect(rows[0].name).toBe("claude-3-5-sonnet");
+    expect(rows[0].date).toBe("2026-03-12");
+    expect(rows[0].inp).toBe(500);
+    expect(rows[0].count).toBe(5);
+    expect(queryAllMock).toHaveBeenCalledWith(
+      expect.stringContaining("FROM events"),
+      "2026-03-12",
+    );
+  });
+
+  it("handles NULL model as '(unknown)' in getModelRollups", () => {
+    vi.setSystemTime(new Date("2026-03-12T10:00:00"));
+    queryAllMock.mockReturnValue([
+      {
+        name: "(unknown)",
+        inp: 100,
+        out: 50,
+        think: 10,
+        chat: 40,
+        code: 0,
+        cache_r: 0,
+        cache_w: 0,
+        cost: 0.5,
+        count: 1,
+      },
+    ]);
+
+    const rows = getModelRollups();
+    expect(rows[0].name).toBe("(unknown)");
+  });
+
+  it("returns empty array when no events exist for getModelRollups", () => {
+    vi.setSystemTime(new Date("2026-03-12T10:00:00"));
+    queryAllMock.mockReturnValue([]);
+
+    expect(getModelRollups()).toEqual([]);
+  });
+
+  it("returns hourly token totals as Map<hour, tokens>", () => {
+    vi.setSystemTime(new Date("2026-03-12T10:00:00"));
+    queryAllMock.mockReturnValue([
+      { hour: 8, tokens: 500_000 },
+      { hour: 9, tokens: 1_200_000 },
+      { hour: 10, tokens: 800_000 },
+    ]);
+
+    const map = getHourlyTotals();
+    expect(map.get(8)).toBe(500_000);
+    expect(map.get(9)).toBe(1_200_000);
+    expect(map.get(10)).toBe(800_000);
+    expect(map.size).toBe(3);
+    expect(queryAllMock).toHaveBeenCalledWith(
+      expect.stringContaining("FROM events"),
+      "2026-03-12",
+    );
+  });
+
+  it("returns empty Map when no events exist for getHourlyTotals", () => {
+    vi.setSystemTime(new Date("2026-03-12T10:00:00"));
+    queryAllMock.mockReturnValue([]);
+
+    expect(getHourlyTotals().size).toBe(0);
+  });
+
+  it("accepts custom date for getModelRollups", () => {
+    queryAllMock.mockReturnValue([]);
+
+    getModelRollups("2026-03-10");
+
+    expect(queryAllMock).toHaveBeenCalledWith(
+      expect.stringContaining("FROM events"),
+      "2026-03-10",
+    );
+  });
+
+  it("accepts custom date for getHourlyTotals", () => {
+    queryAllMock.mockReturnValue([]);
+
+    getHourlyTotals("2026-03-10");
+
+    expect(queryAllMock).toHaveBeenCalledWith(
+      expect.stringContaining("FROM events"),
+      "2026-03-10",
+    );
   });
 });

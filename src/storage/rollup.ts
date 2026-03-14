@@ -297,3 +297,71 @@ export function getHourProviderTotals(): Map<string, number> {
   );
   return new Map(rows.map((r) => [r.provider, r.tokens]));
 }
+
+interface ModelRow {
+  name: string;
+  inp: number | null;
+  out: number | null;
+  think: number | null;
+  chat: number | null;
+  code: number | null;
+  cache_r: number | null;
+  cache_w: number | null;
+  cost: number | null;
+  count: number | null;
+}
+
+export function getModelRollups(date?: string): RollupRow[] {
+  const dateKey = date ?? todayDateKey();
+  const rows = queryAll<ModelRow>(
+    `
+      SELECT
+        COALESCE(model, '(unknown)') AS name,
+        ${SUM_TOKEN_COLUMNS}
+      FROM events
+      WHERE date(ts / 1000, 'unixepoch', 'localtime') = ?
+      GROUP BY model
+      ORDER BY (SUM(inp) + SUM(out) + SUM(think) + SUM(cache_r) + SUM(cache_w)) DESC,
+               name ASC
+    `,
+    dateKey,
+  );
+
+  return rows.map((row) => ({
+    date: dateKey,
+    kind: "model",
+    name: row.name,
+    inp: row.inp ?? 0,
+    out: row.out ?? 0,
+    think: row.think ?? 0,
+    chat: row.chat ?? 0,
+    code: row.code ?? 0,
+    cache_r: row.cache_r ?? 0,
+    cache_w: row.cache_w ?? 0,
+    cost: row.cost ?? 0,
+    count: row.count ?? 0,
+  }));
+}
+
+interface HourlyRow {
+  hour: number;
+  tokens: number;
+}
+
+export function getHourlyTotals(date?: string): Map<number, number> {
+  const dateKey = date ?? todayDateKey();
+  const rows = queryAll<HourlyRow>(
+    `
+      SELECT
+        CAST(strftime('%H', datetime(ts / 1000, 'unixepoch', 'localtime')) AS INTEGER) AS hour,
+        CAST(SUM(inp + out + think + chat + code + cache_r + cache_w) AS INTEGER) AS tokens
+      FROM events
+      WHERE date(ts / 1000, 'unixepoch', 'localtime') = ?
+      GROUP BY hour
+      ORDER BY hour ASC
+    `,
+    dateKey,
+  );
+
+  return new Map(rows.map((r) => [r.hour, r.tokens]));
+}
