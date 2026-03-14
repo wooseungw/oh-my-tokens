@@ -1,7 +1,7 @@
 import { checkBudget, getBudgetConfig } from "../../analytics/budget";
 
 import { formatTokens } from "../formatter";
-import { buildBar, SECTION_RULE } from "../render";
+import { buildBar, buildSectionRule, maxContentWidth } from "../render";
 
 function getDailyBudget(): number | null {
   const cfg = getBudgetConfig();
@@ -33,25 +33,23 @@ export function buildBudgetSummary(textMode = false): string {
   };
   const statuses = checkBudget(config);
 
+  const title = "oh-my-tokens — Budget Status";
+
   if (statuses.length === 0) {
-    return [
-      "oh-my-tokens — Budget Status",
-      SECTION_RULE,
-      "No budgets configured. Set OMT_DAILY_BUDGET_TOKENS, OMT_WEEKLY_BUDGET_TOKENS, or OMT_MONTHLY_BUDGET_TOKENS.",
-    ].join("\n");
+    const msg =
+      "No budgets configured. Set OMT_DAILY_BUDGET_TOKENS, OMT_WEEKLY_BUDGET_TOKENS, or OMT_MONTHLY_BUDGET_TOKENS.";
+    return [title, buildSectionRule(), msg].join("\n");
   }
 
-  return [
-    "oh-my-tokens — Budget Status",
-    SECTION_RULE,
-    ...statuses.map((status) => {
-      const percent = status.ratio * 100;
-      const mark = status.exceeded ? "!" : status.ratio >= 0.8 ? "~" : "✓";
-      if (textMode) {
-        return `  ${status.period.padEnd(7)} ${`${percent.toFixed(1)}%`.padStart(6)}  ${formatTokens(status.used).padStart(7)} / ${formatTokens(status.limit).padStart(7)} ${mark}`;
-      }
-      return `  ${status.period.padEnd(7)} ${buildBar(percent)} ${`${percent.toFixed(1)}%`.padStart(6)}  ${formatTokens(status.used).padStart(7)} / ${formatTokens(status.limit).padStart(7)} ${mark}`;
-    }),
-    SECTION_RULE,
-  ].join("\n");
+  const lines = statuses.map((status) => {
+    const percent = status.ratio * 100;
+    const mark = status.exceeded ? "!" : status.ratio >= 0.8 ? "~" : "✓";
+    if (textMode) {
+      return `  ${status.period.padEnd(7)} ${`${percent.toFixed(1)}%`.padStart(6)}  ${formatTokens(status.used).padStart(7)} / ${formatTokens(status.limit).padStart(7)} ${mark}`;
+    }
+    return `  ${status.period.padEnd(7)} ${buildBar(percent)} ${`${percent.toFixed(1)}%`.padStart(6)}  ${formatTokens(status.used).padStart(7)} / ${formatTokens(status.limit).padStart(7)} ${mark}`;
+  });
+  const width = maxContentWidth(title, ...lines);
+  const rule = buildSectionRule(width);
+  return [title, rule, ...lines, rule].join("\n");
 }

@@ -13,6 +13,7 @@ import {
   formatTimeUntil,
   formatUsageLine,
   LABEL_AREA_MIN,
+  maxContentWidth,
   padVisualEnd,
   QUOTA_PREFIX_WIDTH,
   visualWidth,
@@ -125,44 +126,50 @@ function buildProviderEstDailyLine(
   return `  ${prefix}   ${"░".repeat(BAR_WIDTH)}     ${limitLabel}${resetStr}  [est]`;
 }
 
+interface ProviderBlock {
+  name: string;
+  tokLabel: string | undefined;
+  contentLines: string[];
+}
+
 function buildProviderBlock(
   name: string,
   todayTok: number | undefined,
   liveQuota: ReturnType<typeof getLiveQuota>,
   textMode = false,
-): string[] {
+): ProviderBlock {
   const tokLabel = todayTok !== undefined && todayTok > 0 ? formatTokens(todayTok) : undefined;
-  const lines: string[] = [buildProviderSectionHeader(name, tokLabel)];
+  const contentLines: string[] = [];
 
   if (liveQuota?.windows) {
     const { windows } = liveQuota;
     if (windows.fiveHour) {
       const pctUsed = Math.round(100 - windows.fiveHour.percentRemaining);
-      lines.push(
+      contentLines.push(
         buildProviderQuotaLine("⏱\uFE0F", "5h", pctUsed, windows.fiveHour.resetTimeIso, textMode),
       );
     }
     if (windows.hourly) {
       const pctUsed = Math.round(100 - windows.hourly.percentRemaining);
-      lines.push(
+      contentLines.push(
         buildProviderQuotaLine("⏱\uFE0F", "1h", pctUsed, windows.hourly.resetTimeIso, textMode),
       );
     }
     if (windows.sevenDay) {
       const pctUsed = Math.round(100 - windows.sevenDay.percentRemaining);
-      lines.push(
+      contentLines.push(
         buildProviderQuotaLine("🗓\uFE0F", "7d", pctUsed, windows.sevenDay.resetTimeIso, textMode),
       );
     }
     if (windows.weekly) {
-      lines.push(buildProviderWeeklyQuotaLine(liveQuota, textMode));
+      contentLines.push(buildProviderWeeklyQuotaLine(liveQuota, textMode));
     }
     if (windows.daily) {
-      lines.push(buildProviderEstDailyLine(liveQuota, textMode));
+      contentLines.push(buildProviderEstDailyLine(liveQuota, textMode));
     }
   }
 
-  return lines;
+  return { name, tokLabel, contentLines };
 }
 
 function formatBudgetLine(
@@ -186,7 +193,7 @@ function buildPaceLine(daily: number, total: number, todayRequests: number): str
   return `  pace     ${formatTokens(Math.round(allowedPerHour))}/h allowed  ·  ${reqPerHour.toFixed(1)} req/h  (${todayRequests} req today)`;
 }
 
-function buildBudgetSection(total: number, todayRequests: number, textMode = false): string[] {
+function buildBudgetContentLines(total: number, todayRequests: number, textMode = false): string[] {
   const daily = getDailyBudget();
   const weekly = getPeriodBudget("weekly");
   const monthly = getPeriodBudget("monthly");
@@ -201,7 +208,7 @@ function buildBudgetSection(total: number, todayRequests: number, textMode = fal
     monthly: monthly ?? undefined,
   });
 
-  const lines: string[] = [buildSectionDivider("Budget")];
+  const lines: string[] = [];
   for (const status of statuses) {
     lines.push(formatBudgetLine(status, textMode));
   }
@@ -238,41 +245,61 @@ export function buildTodaySummary(rows: RollupRow[], textMode = false): string {
 
   const labelWidth = Math.max(LABEL_AREA_MIN, ...providerRows.map((row) => visualWidth(row.name)));
   const pct = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
-  const summaryBody = [
-    "oh-my-tokens — Today's Summary",
-    ...liveProviders.flatMap((name) => {
-      const row = todayMap.get(name);
-      return buildProviderBlock(
-        name,
-        row !== undefined ? computeTotalTokens(row) : undefined,
-        getLiveQuota(name),
-        textMode,
-      );
-    }),
-    ...(providerRows.length > 0
-      ? [
-          buildSectionDivider("Today"),
-          ...providerRows.map((row) => {
-            const tok = computeTotalTokens(row);
-            const costStr = costMode ? formatCost(row.cost) : undefined;
-            return formatUsageLine(
-              row.name,
-              total > 0 ? (tok / total) * 100 : 0,
-              tok,
-              labelWidth,
-              textMode,
-              costStr,
-            );
-          }),
-        ]
-      : []),
-    buildSectionDivider("Breakdown"),
+
+  const title = "oh-my-tokens — Today's Summary";
+  const providerBlocks = liveProviders.map((name) => {
+    const row = todayMap.get(name);
+    return buildProviderBlock(
+      name,
+      row !== undefined ? computeTotalTokens(row) : undefined,
+      getLiveQuota(name),
+      textMode,
+    );
+  });
+  const usageLines =
+    providerRows.length > 0
+      ? providerRows.map((row) => {
+          const tok = computeTotalTokens(row);
+          const costStr = costMode ? formatCost(row.cost) : undefined;
+          return formatUsageLine(
+            row.name,
+            total > 0 ? (tok / total) * 100 : 0,
+            tok,
+            labelWidth,
+            textMode,
+            costStr,
+          );
+        })
+      : [];
+  const breakdownLines = [
     `  🧠 think  ${formatTokens(todayTotal.think).padStart(6)} (${`${pct(todayTotal.think)}%`.padStart(3)})   💬 chat  ${formatTokens(todayTotal.chat).padStart(6)} (${`${pct(todayTotal.chat)}%`.padStart(3)})`,
     `  ⌨️ code   ${formatTokens(todayTotal.code).padStart(6)} (${`${pct(todayTotal.code)}%`.padStart(3)})   📥 input ${formatTokens(todayTotal.inp).padStart(6)} (${`${pct(todayTotal.inp)}%`.padStart(3)})`,
     `  📦 cache  ${formatTokens(cacheTotal).padStart(6)} (${`${pct(cacheTotal)}%`.padStart(3)})   Σ total ${formatTokens(total).padStart(6)}`,
-    ...buildBudgetSection(total, todayRequests, textMode),
-  ].join("\n");
+  ];
+  const budgetLines = buildBudgetContentLines(total, todayRequests, textMode);
 
-  const summaryText = createCommandTextPart(summaryBody).text;
+  const allContent = [
+    title,
+    ...providerBlocks.flatMap((b) => b.contentLines),
+    ...usageLines,
+    ...breakdownLines,
+    ...budgetLines,
+  ];
+  const width = maxContentWidth(...allContent);
+
+  const output: string[] = [title];
+  for (const block of providerBlocks) {
+    output.push(buildProviderSectionHeader(block.name, block.tokLabel, width));
+    output.push(...block.contentLines);
+  }
+  if (usageLines.length > 0) {
+    output.push(buildSectionDivider("Today", width), ...usageLines);
+  }
+  output.push(buildSectionDivider("Breakdown", width), ...breakdownLines);
+  if (budgetLines.length > 0) {
+    output.push(buildSectionDivider("Budget", width), ...budgetLines);
+  }
+
+  const summaryText = createCommandTextPart(output.join("\n")).text;
   return alert !== null ? `${alert}\n\n${summaryText}` : summaryText;
 }

@@ -11,7 +11,7 @@ import {
 } from "../../storage/rollup";
 
 import { formatTokens } from "../formatter";
-import { buildBar, formatTimeUntil, SECTION_RULE } from "../render";
+import { buildBar, buildSectionRule, formatTimeUntil, maxContentWidth } from "../render";
 
 function buildLiveWindowLine(
   icon: string,
@@ -179,7 +179,7 @@ export function buildLimitsSummary(textMode = false): string {
   if (!hasAnyProviderLimits() && !hasLiveData) {
     return [
       "oh-my-tokens — Provider Limits",
-      SECTION_RULE,
+      buildSectionRule(),
       "No provider limits configured.",
       'Add providers config to opencode.json experimental["oh-my-tokens"].providers',
     ].join("\n");
@@ -204,11 +204,12 @@ export function buildLimitsSummary(textMode = false): string {
   ).sort();
   const now = new Date();
   const monthLabel = now.toLocaleString("en-US", { month: "short", year: "numeric" });
-  const lines: string[] = [`oh-my-tokens — Provider Limits  [${monthLabel}]`, SECTION_RULE];
+  const title = `oh-my-tokens — Provider Limits  [${monthLabel}]`;
+  const contentLines: string[] = [];
   for (const name of allProviders) {
     const cfg = getResolvedProviderConfig(name);
     const liveQuota = getLiveQuota(name);
-    lines.push(
+    contentLines.push(
       ...buildProviderLimitLines(
         name,
         cfg,
@@ -221,6 +222,7 @@ export function buildLimitsSummary(textMode = false): string {
       ),
     );
   }
-  lines.push(SECTION_RULE);
-  return lines.join("\n");
+  const width = maxContentWidth(title, ...contentLines);
+  const rule = buildSectionRule(width);
+  return [title, rule, ...contentLines, rule].join("\n");
 }

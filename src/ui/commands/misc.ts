@@ -4,7 +4,7 @@ import { execute, queryAll, queryOne, runInTransaction } from "../../storage/db"
 import { getTodayRollups, type RollupRow } from "../../storage/rollup";
 import { todayDateKey } from "../../utils";
 
-import { SECTION_RULE } from "../render";
+import { buildSectionRule, maxContentWidth } from "../render";
 
 const PLUGIN_VERSION = pkg.version;
 
@@ -185,9 +185,8 @@ export function buildStatusOutput(sessionID: string): string {
     "schema_version",
   )?.value;
 
-  return [
-    "oh-my-tokens — Status",
-    SECTION_RULE,
+  const title = "oh-my-tokens — Status";
+  const lines = [
     `Version      ${PLUGIN_VERSION}`,
     `Schema       v${schemaVersion ?? "0"}`,
     `Events       ${formatCount(eventCount)}`,
@@ -195,8 +194,10 @@ export function buildStatusOutput(sessionID: string): string {
     `Providers    ${providers.length > 0 ? providers.join(", ") : "none"}`,
     `Session      ${sessionID}`,
     `Retention    ${getRetentionDays()} days`,
-    SECTION_RULE,
-  ].join("\n");
+  ];
+  const width = maxContentWidth(title, ...lines);
+  const rule = buildSectionRule(width);
+  return [title, rule, ...lines, rule].join("\n");
 }
 
 function rebuildRollups(): { eventsProcessed: number; rollupsCreated: number } {

@@ -3,8 +3,10 @@ import {
   BAR_WIDTH,
   buildBar,
   buildProviderSectionHeader,
+  buildSectionRule,
+  maxContentWidth,
   padVisualEnd,
-  SECTION_RULE,
+  SECTION_WIDTH,
   visualWidth,
 } from "../../src/ui/render";
 
@@ -77,9 +79,22 @@ describe("padVisualEnd", () => {
   });
 });
 
-describe("SECTION_RULE", () => {
-  it("exists and is a non-empty string", () => {
-    expect(typeof SECTION_RULE).toBe("string");
-    expect(SECTION_RULE.length).toBeGreaterThan(0);
+describe("buildSectionRule", () => {
+  it("returns default-width rule", () => {
+    const rule = buildSectionRule();
+    expect(rule).toBe("═".repeat(SECTION_WIDTH));
+  });
+  it("returns custom-width rule", () => {
+    expect(buildSectionRule(60)).toBe("═".repeat(60));
+  });
+});
+
+describe("maxContentWidth", () => {
+  it("returns SECTION_WIDTH for short lines", () => {
+    expect(maxContentWidth("hi")).toBe(SECTION_WIDTH);
+  });
+  it("returns longest line width when exceeding SECTION_WIDTH", () => {
+    const long = "x".repeat(60);
+    expect(maxContentWidth("short", long)).toBe(60);
   });
 });

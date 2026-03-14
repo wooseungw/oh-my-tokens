@@ -1,7 +1,14 @@
 import { formatTokens } from "./formatter";
 
 export const SECTION_WIDTH = 42;
-export const SECTION_RULE = "═".repeat(SECTION_WIDTH);
+
+export function maxContentWidth(...lines: string[]): number {
+  return Math.max(SECTION_WIDTH, ...lines.map(visualWidth));
+}
+
+export function buildSectionRule(width = SECTION_WIDTH): string {
+  return "═".repeat(width);
+}
 export const BAR_WIDTH = 16;
 export const LABEL_AREA_MIN = 10;
 export const QUOTA_PREFIX_WIDTH = 6;
@@ -35,9 +42,9 @@ export function padVisualEnd(s: string, targetWidth: number): string {
   return s + " ".repeat(padding);
 }
 
-export function buildSectionDivider(name: string): string {
+export function buildSectionDivider(name: string, width = SECTION_WIDTH): string {
   const prefix = `─── ${name} `;
-  const trailing = Math.max(4, SECTION_WIDTH - prefix.length);
+  const trailing = Math.max(4, width - prefix.length);
   return `${prefix}${"─".repeat(trailing)}`;
 }
 
@@ -63,13 +70,17 @@ export function formatUsageLine(
   return `  ${padVisualEnd(label, labelWidth)} ${buildBar(percent)} ${`${percent.toFixed(0)}%`.padStart(4)}   ${valueStr}`;
 }
 
-export function buildProviderSectionHeader(name: string, tokLabel?: string): string {
+export function buildProviderSectionHeader(
+  name: string,
+  tokLabel?: string,
+  width = SECTION_WIDTH,
+): string {
   if (tokLabel !== undefined) {
     const headerPrefix = `─── ${name} ─── ${tokLabel} today `;
-    const dashFill = Math.max(4, SECTION_WIDTH - headerPrefix.length);
+    const dashFill = Math.max(4, width - headerPrefix.length);
     return `${headerPrefix}${"─".repeat(dashFill)}`;
   }
-  return buildSectionDivider(name);
+  return buildSectionDivider(name, width);
 }
 
 export function formatTimeUntil(isoString: string): string {

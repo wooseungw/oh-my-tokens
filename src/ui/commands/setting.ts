@@ -4,7 +4,7 @@ import { dirname } from "node:path";
 import { computeTotalTokens } from "../../analytics/token-math";
 import { findOhMyTokensConfigPath, findOpencodeConfigPath } from "../../paths";
 import { getTodayRollups, type RollupRow } from "../../storage/rollup";
-import { buildSectionDivider, formatUsageLine, SECTION_RULE } from "../render";
+import { buildSectionDivider, buildSectionRule, formatUsageLine, maxContentWidth } from "../render";
 import type { DisplayMode } from "../sidebar";
 
 type SettingValue = string | number | boolean;
@@ -83,9 +83,8 @@ function buildSettingDisplay(): string {
     const v = fmtVal(val).padEnd(VAL_W);
     return `  ${k} ${v}  ${hint}`;
   };
-  return [
-    "oh-my-tokens — Settings",
-    SECTION_RULE,
+  const title = "oh-my-tokens — Settings";
+  const contentLines = [
     `Config   ${omtPath}`,
     "",
     row("display", cfg.display, "compact | normal | extend | text"),
@@ -93,19 +92,29 @@ function buildSettingDisplay(): string {
     row("enrichment", cfg.enrichment, "off | auto | manual | opencode-quota"),
     row("lang", cfg.lang, "auto | en | ko | ja | zh  [not yet implemented]"),
     row("retention", cfg.retention, "<number> (days)"),
-    buildSectionDivider("Budget"),
     row("budget.daily", budget.daily, "<number> (tokens)"),
     row("budget.weekly", budget.weekly, "<number> (tokens)"),
     row("budget.monthly", budget.monthly, "<number> (tokens)"),
     row("budget.timezone", budget.timezone, "IANA timezone  e.g. Asia/Seoul"),
     row("budget.dailyResetHour", budget.dailyResetHour, "0–23"),
     row("budget.weeklyResetDay", budget.weeklyResetDay, "monday | tuesday | ... | sunday"),
-    buildSectionDivider("Toast"),
     row("toast.enabled", toast.enabled, "true | false"),
     row("toast.durationMs", toast.durationMs, "<number> (ms)"),
-    "",
     "Set:  /omt setting <key> <value>",
-    SECTION_RULE,
+  ];
+  const width = maxContentWidth(title, ...contentLines);
+  const rule = buildSectionRule(width);
+  return [
+    title,
+    rule,
+    ...contentLines.slice(0, 7),
+    buildSectionDivider("Budget", width),
+    ...contentLines.slice(7, 13),
+    buildSectionDivider("Toast", width),
+    ...contentLines.slice(13, 15),
+    "",
+    contentLines[15],
+    rule,
   ].join("\n");
 }
 
@@ -303,9 +312,9 @@ function buildSettingPreview(textMode: boolean): string {
   if (providerRows.length === 0) {
     return [
       "oh-my-tokens — Today's Summary",
-      SECTION_RULE,
+      buildSectionRule(),
       "No usage recorded today.",
-      SECTION_RULE,
+      buildSectionRule(),
     ].join("\n");
   }
 
@@ -314,20 +323,20 @@ function buildSettingPreview(textMode: boolean): string {
 
   return [
     "oh-my-tokens — Today's Summary",
-    SECTION_RULE,
+    buildSectionRule(),
     ...providerRows.map((row) => {
       const providerTotal = computeTotalTokens(row);
       const percent = total > 0 ? (providerTotal / total) * 100 : 0;
       return formatUsageLine(row.name, percent, providerTotal, labelWidth, textMode);
     }),
-    SECTION_RULE,
+    buildSectionRule(),
   ].join("\n");
 }
 
 function buildUnknownSettingOutput(key: string): string {
   return [
     "oh-my-tokens — Settings",
-    SECTION_RULE,
+    buildSectionRule(),
     `Unknown setting: ${key}`,
     "Run /omt setting to see all available settings.",
   ].join("\n");
@@ -340,12 +349,12 @@ function buildSettingHintOutput(key: string, spec: SettingSpec): string {
   const notYetImplementedNote = key === "unit" || key === "lang" ? "  [not yet implemented]" : "";
   const lines = [
     "oh-my-tokens — Settings",
-    SECTION_RULE,
+    buildSectionRule(),
     `  ${key.padEnd(24)} ${hint}${notYetImplementedNote}`,
     ...(current !== undefined ? [`  Current: ${String(current)}`] : []),
     "",
     `Usage:   /omt setting ${key} ${example}`,
-    SECTION_RULE,
+    buildSectionRule(),
   ];
   return lines.join("\n");
 }
@@ -360,14 +369,14 @@ function buildSettingSuccessOutput(
   const oldLabel = result.oldValue !== undefined ? String(result.oldValue) : "(not set)";
   const lines = [
     "oh-my-tokens — Settings",
-    SECTION_RULE,
+    buildSectionRule(),
     `✓ ${key}   ${oldLabel} → ${String(value)}`,
     `Config   ${configPath}`,
   ];
   if (onSettingApplied === undefined) {
     lines.push("Restart OpenCode to apply changes.");
   }
-  lines.push(SECTION_RULE);
+  lines.push(buildSectionRule());
   if (
     key === "display" &&
     (value === "compact" || value === "normal" || value === "extend" || value === "text")
@@ -394,11 +403,11 @@ export function buildSettingCommandOutput(rawTail: string, onSettingApplied?: ()
   const value = coerceSettingValue(rawValue);
   const validationError = validateSettingValue(key, value);
   if (validationError !== null) {
-    return ["oh-my-tokens — Settings", SECTION_RULE, `✗ ${validationError}`].join("\n");
+    return ["oh-my-tokens — Settings", buildSectionRule(), `✗ ${validationError}`].join("\n");
   }
   const result = applyOhMyTokensSetting(omtConfigPath, key, value);
   if (!result.ok) {
-    return ["oh-my-tokens — Settings", SECTION_RULE, `✗ ${result.error}`].join("\n");
+    return ["oh-my-tokens — Settings", buildSectionRule(), `✗ ${result.error}`].join("\n");
   }
   onSettingApplied?.();
   return buildSettingSuccessOutput(key, value, omtConfigPath, result, onSettingApplied);

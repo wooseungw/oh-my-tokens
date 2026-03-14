@@ -1,6 +1,6 @@
 import { getHourlyTotals } from "../../storage/rollup";
 import { formatTokens } from "../formatter";
-import { SECTION_RULE } from "../render";
+import { buildSectionRule, maxContentWidth } from "../render";
 
 const CHART_BAR_WIDTH = 12;
 
@@ -25,11 +25,8 @@ export function buildHoursSummary(): string {
     lines.push(`  ${hourLabel}  ${bar}  ${tokStr}`);
   }
 
-  return [
-    "oh-my-tokens — Hourly Usage",
-    SECTION_RULE,
-    "TODAY BY HOUR",
-    ...lines,
-    SECTION_RULE,
-  ].join("\n");
+  const title = "oh-my-tokens — Hourly Usage";
+  const width = maxContentWidth(title, ...lines);
+  const rule = buildSectionRule(width);
+  return [title, rule, "TODAY BY HOUR", ...lines, rule].join("\n");
 }

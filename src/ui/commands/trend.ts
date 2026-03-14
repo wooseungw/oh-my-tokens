@@ -8,7 +8,7 @@ import {
 } from "../../analytics/trends";
 import { getUnitSetting } from "../../config/reader";
 
-import { SECTION_RULE } from "../render";
+import { buildSectionRule, maxContentWidth } from "../render";
 
 export function buildTrendSummary(): string {
   const points = getDailyTrend();
@@ -26,18 +26,21 @@ export function buildTrendSummary(): string {
       `  ${point.date}  🧠 ${pctStr(point.thinkPct)}  💬 ${pctStr(point.chatPct)}  ⌨️ ${pctStr(point.codePct)}`,
   );
 
+  const title = "oh-my-tokens — 7-Day Trend";
+  const chart = formatTrendChart(points, costByDate);
+  const spikeLines = spikes.map((spike) => `⚠️ Spike: ${spike.date} (Z=${spike.zScore.toFixed(1)})`);
+  const width = maxContentWidth(title, chart, ...mixLines, wowLabel, ...spikeLines);
+  const rule = buildSectionRule(width);
   return [
-    "oh-my-tokens — 7-Day Trend",
-    SECTION_RULE,
+    title,
+    rule,
     "DAILY USAGE",
-    formatTrendChart(points, costByDate),
-    SECTION_RULE,
+    chart,
+    rule,
     "TOKEN MIX",
     ...mixLines,
-    SECTION_RULE,
+    rule,
     wowLabel,
-    ...(spikes.length > 0
-      ? spikes.map((spike) => `⚠️ Spike: ${spike.date} (Z=${spike.zScore.toFixed(1)})`)
-      : []),
+    ...spikeLines,
   ].join("\n");
 }
