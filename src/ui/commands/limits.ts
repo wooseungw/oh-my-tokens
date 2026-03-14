@@ -11,7 +11,7 @@ import {
 } from "../../storage/rollup";
 
 import { formatTokens } from "../formatter";
-import { BAR_WIDTH, buildBar, formatTimeUntil, SECTION_RULE } from "../render";
+import { buildBar, formatTimeUntil, SECTION_RULE } from "../render";
 
 function buildLiveWindowLine(
   icon: string,
@@ -78,7 +78,7 @@ function buildEstDailyWindowLine(
   if (textMode) {
     return `  📅 daily  ${limitLabel}${resetStr}  [est]`;
   }
-  return `  📅 daily  ${"░".repeat(BAR_WIDTH)}     ${limitLabel}${resetStr}  [est]`;
+  return `  📅 daily  ${buildBar(0)} ${"".padStart(4)}  ${limitLabel}${resetStr}  [est]`;
 }
 
 function buildWeeklyWindowLine(

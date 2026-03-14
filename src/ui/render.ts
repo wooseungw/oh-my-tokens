@@ -3,6 +3,36 @@ import { formatTokens } from "./formatter";
 export const SECTION_WIDTH = 42;
 export const SECTION_RULE = "═".repeat(SECTION_WIDTH);
 export const BAR_WIDTH = 16;
+export const LABEL_AREA_MIN = 10;
+
+export function visualWidth(s: string): number {
+  let width = 0;
+  for (const char of [...s]) {
+    const code = char.codePointAt(0);
+    if (code === undefined || code === 0xfe0f || code === 0x200d) {
+      continue;
+    }
+    if (
+      (code >= 0x1f300 && code <= 0x1faff) ||
+      (code >= 0x2300 && code <= 0x27ff) ||
+      (code >= 0x4e00 && code <= 0x9fff) ||
+      (code >= 0xac00 && code <= 0xd7af) ||
+      (code >= 0x3000 && code <= 0x303f) ||
+      (code >= 0xff00 && code <= 0xffef)
+    ) {
+      width += 2;
+      continue;
+    }
+    width += 1;
+  }
+  return width;
+}
+
+export function padVisualEnd(s: string, targetWidth: number): string {
+  const current = visualWidth(s);
+  const padding = Math.max(0, targetWidth - current);
+  return s + " ".repeat(padding);
+}
 
 export function buildSectionDivider(name: string): string {
   const prefix = `─── ${name} `;
@@ -24,9 +54,9 @@ export function formatUsageLine(
   textMode = false,
 ): string {
   if (textMode) {
-    return `  ${label.padEnd(labelWidth)}   ${formatTokens(tokens).padStart(6)} tok  (${percent.toFixed(0)}%)`;
+    return `  ${padVisualEnd(label, labelWidth)}   ${formatTokens(tokens).padStart(6)} tok  (${percent.toFixed(0)}%)`;
   }
-  return `  ${label.padEnd(labelWidth)} ${buildBar(percent)} ${`${percent.toFixed(0)}%`.padStart(4)}   ${formatTokens(tokens).padStart(6)} tok`;
+  return `  ${padVisualEnd(label, labelWidth)} ${buildBar(percent)} ${`${percent.toFixed(0)}%`.padStart(4)}   ${formatTokens(tokens).padStart(6)} tok`;
 }
 
 export function buildProviderSectionHeader(name: string, tokLabel?: string): string {
@@ -61,7 +91,7 @@ export function buildProviderQuotaLine(
   const pctStr = `${pctUsed}%`.padStart(4);
   const resetStr = resetTimeIso ? `  resets ${formatTimeUntil(resetTimeIso)}` : "";
   if (textMode) {
-    return `  ${icon} ${label.padEnd(3)}   ${pctStr} used${resetStr}  [live]`;
+    return `  ${icon} ${padVisualEnd(label, 3)}   ${pctStr} used${resetStr}  [live]`;
   }
-  return `  ${icon} ${label.padEnd(3)}   ${buildBar(pctUsed)} ${pctStr}${resetStr}  [live]`;
+  return `  ${icon} ${padVisualEnd(label, 3)}   ${buildBar(pctUsed)} ${pctStr}${resetStr}  [live]`;
 }

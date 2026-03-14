@@ -8,9 +8,9 @@
 
 ## Recent Updates
 
+- `fix` Visual-aware padding for emoji labels, unified bar column per command
 - `feat` Add formatCost and getUnitSetting for cost display mode
 - `fix` Re-enable toast notifications, wire toast.enabled config
-- `feat` Add getModelRollups and getHourlyTotals query functions for model and hourly aggregates
 
 ## Preview
 

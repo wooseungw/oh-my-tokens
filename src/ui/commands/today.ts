@@ -11,6 +11,8 @@ import {
   buildSectionDivider,
   formatTimeUntil,
   formatUsageLine,
+  LABEL_AREA_MIN,
+  visualWidth,
 } from "../render";
 
 interface UsageTotals {
@@ -225,7 +227,7 @@ export function buildTodaySummary(rows: RollupRow[], textMode = false): string {
   };
   const alert = formatBudgetAlert(checkBudget(alertCfg));
 
-  const labelWidth = Math.max(10, ...providerRows.map((row) => row.name.length));
+  const labelWidth = Math.max(LABEL_AREA_MIN, ...providerRows.map((row) => visualWidth(row.name)));
   const pct = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
   const summaryBody = [
     "oh-my-tokens — Today's Summary",
