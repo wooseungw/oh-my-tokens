@@ -3,14 +3,15 @@
 [![npm version](https://img.shields.io/npm/v/oh-my-tokens.svg)](https://www.npmjs.com/package/oh-my-tokens)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js >= 18](https://img.shields.io/badge/Node.js-%3E%3D%2018-brightgreen)](https://nodejs.org/)
+[![Coverage](https://codecov.io/gh/wooseungw/oh-my-tokens/branch/main/graph/badge.svg)](https://codecov.io/gh/wooseungw/oh-my-tokens)
 
 **oh-my-tokens** is an OpenCode plugin for per-provider, per-agent token usage tracking and analysis. Track exactly which provider, agent, and task type (think/chat/code) consumed tokens in real time.
 
 ## Recent Updates
 
+- `ci` Add Codecov coverage reporting and README badge
 - `ci` Add CodeQL security scanning workflow
 - `test` Add enrichment resolver e2e integration test
-- `test` Add storage migration and rollup e2e integration test
 
 ## Preview
 
