@@ -147,7 +147,7 @@ function buildLocalWindowLine(
   if (textMode) {
     return `  ${window.label} ${formatTokens(window.used).padStart(7)}`;
   }
-  return `  ${window.label} ${buildBar(0)} ${" ".padStart(4, " ")}--  ${formatTokens(window.used).padStart(7)}`;
+  return `  ${window.label} ${buildBar(0)}   --  ${formatTokens(window.used).padStart(7)}`;
 }
 
 function buildProviderLimitLines(
