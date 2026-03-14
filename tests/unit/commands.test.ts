@@ -75,7 +75,7 @@ vi.mock("../../src/paths", () => ({
   findOhMyTokensConfigPath: findOhMyTokensConfigPathMock,
 }));
 
-import { handleOmtCommand } from "../../src/ui/commands";
+import { handleOmtCommand } from "../../src/ui/commands/index";
 
 describe("handleOmtCommand — default summary", () => {
   beforeEach(() => {

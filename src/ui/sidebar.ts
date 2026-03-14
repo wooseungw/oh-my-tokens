@@ -10,6 +10,7 @@ import {
   type RollupRow,
 } from "../storage/rollup";
 import { formatTokens } from "./formatter";
+import { buildBar } from "./render";
 
 export interface SidebarItem {
   label: string;
@@ -51,8 +52,6 @@ interface QuotaWindowEntry {
   label: string;
   pct: number;
 }
-
-const QUOTA_BAR_WIDTH = 8;
 
 const TIER_MONTHLY_ESTIMATE: Readonly<Record<string, Readonly<Record<string, number>>>> = {
   anthropic: {
@@ -238,12 +237,6 @@ function buildSessionItem(): SidebarItem {
   };
 }
 
-function buildQuotaBar(pctUsed: number): string {
-  const clamped = Math.min(Math.max(pctUsed, 0), 100);
-  const filled = Math.round((clamped / 100) * QUOTA_BAR_WIDTH);
-  return `${"█".repeat(filled)}${"░".repeat(QUOTA_BAR_WIDTH - filled)}`;
-}
-
 function quotaItemStatus(pctRemaining: number): SidebarItem["status"] {
   if (pctRemaining <= 20) return "error";
   if (pctRemaining <= 40) return "warning";
@@ -315,7 +308,7 @@ function buildQuotaExtendItems(): SidebarItem[] {
     for (const entry of collectWindowEntries(name, monthMap)) {
       items.push({
         label: `${name} ${entry.icon}${entry.label}`,
-        value: `${buildQuotaBar(100 - entry.pct)} ${Math.round(entry.pct)}% left`,
+        value: `${buildBar(100 - entry.pct, 8)} ${Math.round(entry.pct)}% left`,
         status: quotaItemStatus(entry.pct),
       });
     }
