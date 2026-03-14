@@ -1,7 +1,14 @@
 import { formatTokens } from "./formatter";
 
-export const SECTION_RULE = "═══════════════════════════════════════";
+export const SECTION_WIDTH = 42;
+export const SECTION_RULE = "═".repeat(SECTION_WIDTH);
 export const BAR_WIDTH = 16;
+
+export function buildSectionDivider(name: string): string {
+  const prefix = `─── ${name} `;
+  const trailing = Math.max(4, SECTION_WIDTH - prefix.length);
+  return `${prefix}${"─".repeat(trailing)}`;
+}
 
 export function buildBar(percent: number, width = BAR_WIDTH): string {
   const normalized = Math.max(0, Math.min(percent, 100));
@@ -24,13 +31,11 @@ export function formatUsageLine(
 
 export function buildProviderSectionHeader(name: string, tokLabel?: string): string {
   if (tokLabel !== undefined) {
-    const HEADER_WIDTH = 42;
-    const dashFill = Math.max(0, HEADER_WIDTH - 10 - name.length - tokLabel.length);
-    return `─── ${name} ─── ${tokLabel} today ${"─".repeat(dashFill)}`;
+    const headerPrefix = `─── ${name} ─── ${tokLabel} today `;
+    const dashFill = Math.max(4, SECTION_WIDTH - headerPrefix.length);
+    return `${headerPrefix}${"─".repeat(dashFill)}`;
   }
-  const HEADER_WIDTH = 38;
-  const dashFill = Math.max(0, HEADER_WIDTH - 5 - name.length);
-  return `─── ${name} ${"─".repeat(dashFill)}`;
+  return buildSectionDivider(name);
 }
 
 export function formatTimeUntil(isoString: string): string {

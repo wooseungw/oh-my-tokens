@@ -4,7 +4,7 @@ import { dirname } from "node:path";
 import { computeTotalTokens } from "../../analytics/token-math";
 import { findOhMyTokensConfigPath, findOpencodeConfigPath } from "../../paths";
 import { getTodayRollups, type RollupRow } from "../../storage/rollup";
-import { formatUsageLine, SECTION_RULE } from "../render";
+import { buildSectionDivider, formatUsageLine, SECTION_RULE } from "../render";
 import type { DisplayMode } from "../sidebar";
 
 type SettingValue = string | number | boolean;
@@ -93,14 +93,14 @@ function buildSettingDisplay(): string {
     row("enrichment", cfg.enrichment, "off | auto | manual | opencode-quota"),
     row("lang", cfg.lang, "auto | en | ko | ja | zh"),
     row("retention", cfg.retention, "<number> (days)"),
-    "─── Budget ─────────────────────────────",
+    buildSectionDivider("Budget"),
     row("budget.daily", budget.daily, "<number> (tokens)"),
     row("budget.weekly", budget.weekly, "<number> (tokens)"),
     row("budget.monthly", budget.monthly, "<number> (tokens)"),
     row("budget.timezone", budget.timezone, "IANA timezone  e.g. Asia/Seoul"),
     row("budget.dailyResetHour", budget.dailyResetHour, "0–23"),
     row("budget.weeklyResetDay", budget.weeklyResetDay, "monday | tuesday | ... | sunday"),
-    "─── Toast ───────────────────────────────",
+    buildSectionDivider("Toast"),
     row("toast.enabled", toast.enabled, "true | false"),
     row("toast.durationMs", toast.durationMs, "<number> (ms)"),
     "",
@@ -371,7 +371,7 @@ function buildSettingSuccessOutput(
     key === "display" &&
     (value === "compact" || value === "normal" || value === "extend" || value === "text")
   ) {
-    lines.push("", "─── Preview ────────────────────────────");
+    lines.push("", buildSectionDivider("Preview"));
     lines.push(buildSettingPreview(value === "text" || getDisplayMode() === "text"));
   }
   return lines.join("\n");

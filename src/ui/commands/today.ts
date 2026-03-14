@@ -8,6 +8,7 @@ import {
   buildBar,
   buildProviderQuotaLine,
   buildProviderSectionHeader,
+  buildSectionDivider,
   formatTimeUntil,
   formatUsageLine,
 } from "../render";
@@ -190,7 +191,7 @@ function buildBudgetSection(total: number, todayRequests: number, textMode = fal
     monthly: monthly ?? undefined,
   });
 
-  const lines: string[] = ["─── Budget ─────────────────────────"];
+  const lines: string[] = [buildSectionDivider("Budget")];
   for (const status of statuses) {
     lines.push(formatBudgetLine(status, textMode));
   }
@@ -239,7 +240,7 @@ export function buildTodaySummary(rows: RollupRow[], textMode = false): string {
     }),
     ...(providerRows.length > 0
       ? [
-          "─── Today ──────────────────────────",
+          buildSectionDivider("Today"),
           ...providerRows.map((row) => {
             const tok = computeTotalTokens(row);
             return formatUsageLine(
@@ -252,7 +253,7 @@ export function buildTodaySummary(rows: RollupRow[], textMode = false): string {
           }),
         ]
       : []),
-    "─── Breakdown ──────────────────────",
+    buildSectionDivider("Breakdown"),
     `  🧠 think  ${formatTokens(todayTotal.think).padStart(6)} (${`${pct(todayTotal.think)}%`.padStart(3)})   💬 chat  ${formatTokens(todayTotal.chat).padStart(6)} (${`${pct(todayTotal.chat)}%`.padStart(3)})`,
     `  ⌨️ code   ${formatTokens(todayTotal.code).padStart(6)} (${`${pct(todayTotal.code)}%`.padStart(3)})   📥 input ${formatTokens(todayTotal.inp).padStart(6)} (${`${pct(todayTotal.inp)}%`.padStart(3)})`,
     `  📦 cache  ${formatTokens(cacheTotal).padStart(6)} (${`${pct(cacheTotal)}%`.padStart(3)})   Σ total ${formatTokens(total).padStart(6)}`,
