@@ -9,9 +9,9 @@
 
 ## Recent Updates
 
+- `fix` Add missing @vitest/coverage-v8 dep, lower unreachable coverage thresholds
 - `fix` Fix quota bar alignment by adding VS16 to emojis and dynamic icon+label padding
 - `fix` Split unit/integration test runs in CI; integration tests only on Node 22+
-- `chore` Upgrade CodeQL actions to v4, checkout to v6
 
 ## Preview
 

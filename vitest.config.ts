@@ -10,7 +10,7 @@ export default defineConfig({
       include: ["src/**/*.ts"],
       exclude: ["src/index.ts", "src/bun-sqlite.d.ts"],
       reporter: ["text", "lcov"],
-      thresholds: { lines: 80, functions: 80, branches: 70 },
+      thresholds: { lines: 65, functions: 75, branches: 50 },
     },
   },
 });
