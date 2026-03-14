@@ -9,9 +9,9 @@
 
 ## Recent Updates
 
+- `fix` Skip integration tests on Node < 22 (node:sqlite unavailable), run coverage on Node 22
 - `chore` Bump to 0.2.0, require @opencode-ai/plugin ^1.2.0
 - `fix` Remove env var budget fallback in sidebar
-- `ci` Add Codecov coverage reporting and README badge
 
 ## Preview
 

@@ -1,6 +1,12 @@
 /// <reference path="../../src/bun-sqlite.d.ts" />
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+let hasNodeSqlite = false;
+try {
+  await import("node:sqlite");
+  hasNodeSqlite = true;
+} catch {}
+
 vi.unmock("bun:sqlite");
 
 const { findOpenCodeDbPathMock } = vi.hoisted(() => ({
@@ -98,7 +104,9 @@ import { runMigrations } from "../../src/storage/migrations";
 import { getTodayRollups } from "../../src/storage/rollup";
 import { recordEvent } from "../../src/tracking/recorder";
 
-describe("storage integration", () => {
+const describeIf = hasNodeSqlite ? describe : describe.skip;
+
+describeIf("storage integration", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-03-14T12:00:00"));
