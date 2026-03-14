@@ -1,6 +1,6 @@
 # Configuration
 
-You can customize the oh-my-tokens plugin behavior by editing the `experimental["oh-my-tokens"]` key within your `opencode.json` configuration file. The recommended way to modify these settings is using the `/omt setting` command.
+You can customize the oh-my-tokens plugin behavior by editing `oh-my-tokens.json` — the plugin's dedicated config file, created automatically next to your `opencode.json`. The recommended way to modify these settings is using the `/omt setting` command.
 
 ## Settings Reference
 
@@ -32,19 +32,15 @@ To set a daily budget of 500,000 tokens and ensure it resets correctly for your 
 ```
 
 ### Configure Manual Provider Limits
-If you want to track your own limits for Anthropic, first set `enrichment` to `manual`, then define your budget:
+To use manual provider limits, set `enrichment` to `manual` in `oh-my-tokens.json`, then add your provider budgets:
 ```json
 {
-  "experimental": {
-    "oh-my-tokens": {
-      "enrichment": "manual",
-      "providers": {
-        "anthropic": {
-          "budget": 500000,
-          "unit": "tokens",
-          "period": "monthly"
-        }
-      }
+  "enrichment": "manual",
+  "providers": {
+    "anthropic": {
+      "budget": 500000,
+      "unit": "tokens",
+      "period": "monthly"
     }
   }
 }
