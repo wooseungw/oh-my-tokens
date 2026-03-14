@@ -86,7 +86,12 @@ export const OhMyTokensPlugin: Plugin = async (input) => {
       setBudgetConfig(budgetConfig);
       setWeeklyResetDay(budgetConfig.weeklyResetDay);
     }
-    _enrichmentConfig = { mode: normalizeMode(pluginCfg.enrichment as string | undefined) };
+    _enrichmentConfig = {
+      mode: normalizeMode(pluginCfg.enrichment as string | undefined),
+      providers: pluginCfg.providers as
+        | Record<string, { budget: number; unit: "tokens" | "requests"; period: string }>
+        | undefined,
+    };
     if (_enrichmentConfig.mode !== "off") refreshLiveQuotas().catch(() => {});
   }
 
