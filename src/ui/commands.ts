@@ -4,6 +4,7 @@ import pkg from "../../package.json";
 import { checkBudget, formatBudgetAlert, getBudgetConfig } from "../analytics/budget";
 import { getResolvedProviderConfig, hasAnyProviderLimits } from "../analytics/plans";
 import { getLiveProviders, getLiveQuota } from "../analytics/quota";
+import { computeTotalTokens } from "../analytics/token-math";
 import { detectSpikes, formatTrendChart, getDailyTrend, getWowChange } from "../analytics/trends";
 import type { ProviderQuotaWindow } from "../enrichment/providers";
 import { findOhMyTokensConfigPath, findOpencodeConfigPath } from "../paths";
@@ -18,10 +19,17 @@ import {
 
 import { todayDateKey } from "../utils";
 import { formatTokens } from "./formatter";
+import {
+  BAR_WIDTH,
+  buildBar,
+  buildProviderQuotaLine,
+  buildProviderSectionHeader,
+  formatTimeUntil,
+  formatUsageLine,
+  SECTION_RULE,
+} from "./render";
 import type { DisplayMode } from "./sidebar";
 
-const SECTION_RULE = "═══════════════════════════════════════";
-const BAR_WIDTH = 16;
 const PLUGIN_VERSION = pkg.version;
 
 interface CountRow {
@@ -72,16 +80,6 @@ interface UsageTotals {
   cache_w: number;
 }
 
-function totalTokens(usage: UsageTotals): number {
-  return usage.inp + usage.out + usage.think + usage.cache_r + usage.cache_w;
-}
-
-function buildBar(percent: number): string {
-  const normalized = Math.max(0, Math.min(percent, 100));
-  const filled = Math.round((normalized / 100) * BAR_WIDTH);
-  return `${"█".repeat(filled)}${"░".repeat(BAR_WIDTH - filled)}`;
-}
-
 function getDailyBudget(): number | null {
   const cfg = getBudgetConfig();
   if (cfg.daily !== undefined) return cfg.daily;
@@ -127,50 +125,11 @@ function findTodayTotal(rows: RollupRow[]): UsageTotals {
     );
 }
 
-function formatUsageLine(
-  label: string,
-  percent: number,
-  tokens: number,
-  labelWidth = 10,
-  textMode = false,
-): string {
-  if (textMode) {
-    return `  ${label.padEnd(labelWidth)}   ${formatTokens(tokens).padStart(6)} tok  (${percent.toFixed(0)}%)`;
-  }
-  return `  ${label.padEnd(labelWidth)} ${buildBar(percent)} ${`${percent.toFixed(0)}%`.padStart(4)}   ${formatTokens(tokens).padStart(6)} tok`;
-}
-
 function createCommandTextPart(text: string): { type: "text"; text: string } {
   return {
     type: "text",
     text,
   };
-}
-
-function buildProviderSectionHeader(name: string, tokLabel?: string): string {
-  if (tokLabel !== undefined) {
-    const HEADER_WIDTH = 42;
-    const dashFill = Math.max(0, HEADER_WIDTH - 10 - name.length - tokLabel.length);
-    return `─── ${name} ─── ${tokLabel} today ${"─".repeat(dashFill)}`;
-  }
-  const HEADER_WIDTH = 38;
-  const dashFill = Math.max(0, HEADER_WIDTH - 5 - name.length);
-  return `─── ${name} ${"─".repeat(dashFill)}`;
-}
-
-function buildProviderQuotaLine(
-  icon: string,
-  label: string,
-  pctUsed: number,
-  resetTimeIso?: string,
-  textMode = false,
-): string {
-  const pctStr = `${pctUsed}%`.padStart(4);
-  const resetStr = resetTimeIso ? `  resets ${formatTimeUntil(resetTimeIso)}` : "";
-  if (textMode) {
-    return `  ${icon} ${label.padEnd(3)}   ${pctStr} used${resetStr}  [live]`;
-  }
-  return `  ${icon} ${label.padEnd(3)}   ${buildBar(pctUsed)} ${pctStr}${resetStr}  [live]`;
 }
 
 function buildProviderWeeklyQuotaLine(
@@ -304,12 +263,12 @@ function buildBudgetSection(total: number, todayRequests: number, textMode = fal
 
 function buildTodaySummary(rows: RollupRow[], textMode = false): string {
   const todayTotal = findTodayTotal(rows);
-  const total = totalTokens(todayTotal);
+  const total = computeTotalTokens(todayTotal);
   const cacheTotal = todayTotal.cache_r + todayTotal.cache_w;
 
   const providerRows = rows
     .filter((row) => row.kind === "provider")
-    .sort((left, right) => totalTokens(right) - totalTokens(left));
+    .sort((left, right) => computeTotalTokens(right) - computeTotalTokens(left));
   const todayRequests = providerRows.reduce((sum, row) => sum + row.count, 0);
   const todayMap = new Map(providerRows.map((r) => [r.name, r]));
 
@@ -331,7 +290,7 @@ function buildTodaySummary(rows: RollupRow[], textMode = false): string {
       const row = todayMap.get(name);
       return buildProviderBlock(
         name,
-        row !== undefined ? totalTokens(row) : undefined,
+        row !== undefined ? computeTotalTokens(row) : undefined,
         getLiveQuota(name),
         textMode,
       );
@@ -340,7 +299,7 @@ function buildTodaySummary(rows: RollupRow[], textMode = false): string {
       ? [
           "─── Today ──────────────────────────",
           ...providerRows.map((row) => {
-            const tok = totalTokens(row);
+            const tok = computeTotalTokens(row);
             return formatUsageLine(
               row.name,
               total > 0 ? (tok / total) * 100 : 0,
@@ -364,8 +323,8 @@ function buildTodaySummary(rows: RollupRow[], textMode = false): string {
 function buildAgentSummary(rows: RollupRow[], textMode = false): string {
   const agents = rows
     .filter((row) => row.kind === "agent")
-    .sort((left, right) => totalTokens(right) - totalTokens(left));
-  const total = agents.reduce((sum, row) => sum + totalTokens(row), 0);
+    .sort((left, right) => computeTotalTokens(right) - computeTotalTokens(left));
+  const total = agents.reduce((sum, row) => sum + computeTotalTokens(row), 0);
   const labelWidth = Math.max(
     10,
     ...agents.map((row) => (row.count > 1 ? `${row.name} ×${row.count}` : row.name).length),
@@ -376,7 +335,7 @@ function buildAgentSummary(rows: RollupRow[], textMode = false): string {
     SECTION_RULE,
     "AGENTS",
     ...agents.map((row) => {
-      const agentTotal = totalTokens(row);
+      const agentTotal = computeTotalTokens(row);
       const percent = total > 0 ? (agentTotal / total) * 100 : 0;
       const countLabel = row.count > 1 ? `${row.name} ×${row.count}` : row.name;
       return formatUsageLine(countLabel, percent, agentTotal, labelWidth, textMode);
@@ -644,19 +603,6 @@ function parseCommand(args: string): ParsedCommand {
   return { subcommand, args: tokens.slice(1), rawTail };
 }
 
-function formatTimeUntil(isoString: string): string {
-  const ms = new Date(isoString).getTime() - Date.now();
-  if (ms <= 0) return "now";
-  const hours = Math.floor(ms / 3_600_000);
-  const minutes = Math.floor((ms % 3_600_000) / 60_000);
-  if (hours >= 24) {
-    const days = Math.floor(hours / 24);
-    return `${days}d ${hours % 24}h`;
-  }
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  return `${minutes}m`;
-}
-
 function buildLiveWindowLine(
   icon: string,
   label: string,
@@ -831,7 +777,7 @@ function buildLimitsSummary(textMode = false): string {
   const todayRows = getTodayRollups().filter((r) => r.kind === "provider");
   const weekRows = getWeekProviderRollups();
   const monthRows = getMonthProviderRollups();
-  const toMap = (rows: RollupRow[]) => new Map(rows.map((r) => [r.name, totalTokens(r)]));
+  const toMap = (rows: RollupRow[]) => new Map(rows.map((r) => [r.name, computeTotalTokens(r)]));
   const dayMap = toMap(todayRows);
   const weekMap = toMap(weekRows);
   const monthMap = toMap(monthRows);

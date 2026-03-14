@@ -2,6 +2,7 @@ import { getRollups, type RollupRow } from "../storage/rollup";
 import { formatTokens } from "../ui/formatter";
 import { dateKeyFromMs } from "../utils";
 import { aggregateByDate } from "./aggregator";
+import { computeTotalTokens } from "./token-math";
 
 const CHART_BAR_WIDTH = 12;
 const SPIKE_Z_SCORE_THRESHOLD = 2;
@@ -15,12 +16,6 @@ export interface SpikeResult {
   date: string;
   total: number;
   zScore: number;
-}
-
-function totalTokens(
-  row: Pick<RollupRow, "inp" | "out" | "think" | "cache_r" | "cache_w">,
-): number {
-  return row.inp + row.out + row.think + row.cache_r + row.cache_w;
 }
 
 function addLocalDays(date: Date, days: number): Date {
@@ -81,12 +76,12 @@ function sumRangeTotal(from: string, to: string): number {
   const rows = getRollups(from, to).filter((row) => row.kind === "total" && row.name === "*");
 
   if (rows.length > 0) {
-    return rows.reduce((sum, row) => sum + totalTokens(row), 0);
+    return rows.reduce((sum, row) => sum + computeTotalTokens(row), 0);
   }
 
   return getRollups(from, to)
     .filter((row) => row.kind === "provider")
-    .reduce((sum, row) => sum + totalTokens(row), 0);
+    .reduce((sum, row) => sum + computeTotalTokens(row), 0);
 }
 
 function buildBar(total: number, maxTotal: number): string {

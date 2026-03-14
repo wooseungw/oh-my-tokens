@@ -28,6 +28,18 @@ interface AggregateRow {
   count: number | null;
 }
 
+const SUM_TOKEN_COLUMNS = [
+  "SUM(inp) AS inp",
+  "SUM(out) AS out",
+  "SUM(think) AS think",
+  "SUM(chat) AS chat",
+  "SUM(code) AS code",
+  "SUM(cache_r) AS cache_r",
+  "SUM(cache_w) AS cache_w",
+  "SUM(cost) AS cost",
+  "COUNT(*) AS count",
+].join(",\n        ");
+
 function monthBounds(date: Date): { from: string; to: string } {
   const year = date.getFullYear();
   const month = date.getMonth();
@@ -140,15 +152,7 @@ export function getSessionTotals(sessionId: string): {
   const row = queryOne<AggregateRow>(
     `
       SELECT
-        SUM(inp) AS inp,
-        SUM(out) AS out,
-        SUM(think) AS think,
-        SUM(chat) AS chat,
-        SUM(code) AS code,
-        SUM(cache_r) AS cache_r,
-        SUM(cache_w) AS cache_w,
-        SUM(cost) AS cost,
-        COUNT(*) AS count
+        ${SUM_TOKEN_COLUMNS}
       FROM events
       WHERE sid = ?
     `,
@@ -180,15 +184,7 @@ export function getWeekTotal(): RollupRow | null {
     queryOne<AggregateRow>(
       `
         SELECT
-          SUM(inp) AS inp,
-          SUM(out) AS out,
-          SUM(think) AS think,
-          SUM(chat) AS chat,
-          SUM(code) AS code,
-          SUM(cache_r) AS cache_r,
-          SUM(cache_w) AS cache_w,
-          SUM(cost) AS cost,
-          SUM(count) AS count
+          ${SUM_TOKEN_COLUMNS}
         FROM rollups
         WHERE kind = 'total' AND name = '*' AND date BETWEEN ? AND ?
       `,
@@ -206,15 +202,7 @@ export function getMonthTotal(): RollupRow | null {
     queryOne<AggregateRow>(
       `
         SELECT
-          SUM(inp) AS inp,
-          SUM(out) AS out,
-          SUM(think) AS think,
-          SUM(chat) AS chat,
-          SUM(code) AS code,
-          SUM(cache_r) AS cache_r,
-          SUM(cache_w) AS cache_w,
-          SUM(cost) AS cost,
-          SUM(count) AS count
+          ${SUM_TOKEN_COLUMNS}
         FROM rollups
         WHERE kind = 'total' AND name = '*' AND date BETWEEN ? AND ?
       `,

@@ -3,6 +3,7 @@ import type { RollupRow } from "../storage/rollup";
 import { getMonthTotal, getRollups, getTodayRollups, getWeekTotal } from "../storage/rollup";
 import { formatTokens } from "../ui/formatter";
 import { todayDateKey } from "../utils";
+import { computeTotalTokens } from "./token-math";
 
 const BAR_WIDTH = 16;
 
@@ -32,12 +33,6 @@ export interface BudgetStatus {
   used: number;
   ratio: number;
   exceeded: boolean;
-}
-
-function totalTokens(
-  row: Pick<RollupRow, "inp" | "out" | "think" | "cache_r" | "cache_w">,
-): number {
-  return row.inp + row.out + row.think + row.cache_r + row.cache_w;
 }
 
 function buildBar(ratio: number): string {
@@ -142,12 +137,12 @@ function getTotalRowTotal(rows: RollupRow[]): number {
   const totalRow = rows.find((row) => row.kind === "total" && row.name === "*");
 
   if (totalRow !== undefined) {
-    return totalTokens(totalRow);
+    return computeTotalTokens(totalRow);
   }
 
   return rows
     .filter((row) => row.kind === "provider")
-    .reduce((sum, row) => sum + totalTokens(row), 0);
+    .reduce((sum, row) => sum + computeTotalTokens(row), 0);
 }
 
 function getDailyUsed(resetHour: number | undefined, tz: string | undefined): number {
@@ -169,9 +164,11 @@ function getWeeklyUsed(resetDay: string | undefined, tz: string | undefined): nu
     const rows = getRollups(mostRecentWeekdayDate(weekdayIdx, tz), todayDateKey());
     return rows
       .filter((row) => row.kind === "total" && row.name === "*")
-      .reduce((sum, row) => sum + totalTokens(row), 0);
+      .reduce((sum, row) => sum + computeTotalTokens(row), 0);
   }
-  return totalTokens(getWeekTotal() ?? { inp: 0, out: 0, think: 0, cache_r: 0, cache_w: 0 });
+  return computeTotalTokens(
+    getWeekTotal() ?? { inp: 0, out: 0, think: 0, chat: 0, code: 0, cache_r: 0, cache_w: 0 },
+  );
 }
 
 export function checkBudget(config: BudgetConfig): BudgetStatus[] {
@@ -200,11 +197,13 @@ export function checkBudget(config: BudgetConfig): BudgetStatus[] {
   }
 
   if (config.monthly !== undefined) {
-    const used = totalTokens(
+    const used = computeTotalTokens(
       getMonthTotal() ?? {
         inp: 0,
         out: 0,
         think: 0,
+        chat: 0,
+        code: 0,
         cache_r: 0,
         cache_w: 0,
       },

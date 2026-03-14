@@ -1,4 +1,5 @@
 import { getLiveProviders, getLiveQuota } from "../analytics/quota";
+import { computeTotalTokens } from "../analytics/token-math";
 import type { ProviderQuota } from "../enrichment/providers";
 import {
   getMonthProviderRollups,
@@ -108,10 +109,6 @@ function getBudgetStatus(ratio: number | null): SidebarItem["status"] {
   return "success";
 }
 
-function totalTokens(usage: UsageTotals): number {
-  return usage.inp + usage.out + usage.think + usage.cache_r + usage.cache_w;
-}
-
 function formatReplyValue(): string {
   if (lastReply === null) {
     return "-";
@@ -132,7 +129,7 @@ function formatBudgetValue(info: BudgetInfo): string {
 function groupRollups(kind: string, rows: RollupRow[]): RollupRow[] {
   return rows
     .filter((row) => row.kind === kind)
-    .sort((left, right) => totalTokens(right) - totalTokens(left));
+    .sort((left, right) => computeTotalTokens(right) - computeTotalTokens(left));
 }
 
 function findTodayTotal(rows: RollupRow[]): UsageTotals {
@@ -178,7 +175,7 @@ function buildProviderItems(rows: RollupRow[], todayTotalTokens: number): Sideba
   return groupRollups("provider", rows)
     .slice(0, 2)
     .map((row) => {
-      const rowTotal = totalTokens(row);
+      const rowTotal = computeTotalTokens(row);
       const ratio = todayTotalTokens > 0 ? (rowTotal / todayTotalTokens) * 100 : 0;
 
       return {
@@ -194,7 +191,7 @@ function buildAgentItems(rows: RollupRow[]): SidebarItem[] {
     .slice(0, 2)
     .map((row) => ({
       label: row.name,
-      value: `${formatTokens(totalTokens(row))} tok`,
+      value: `${formatTokens(computeTotalTokens(row))} tok`,
       status: "info",
     }));
 }
@@ -232,7 +229,7 @@ function buildRateItem(todayTotalTokens: number): SidebarItem {
 
 function buildSessionItem(): SidebarItem {
   const session = currentSessionId === null ? null : getSessionTotals(currentSessionId);
-  const total = session === null ? 0 : totalTokens(session);
+  const total = session === null ? 0 : computeTotalTokens(session);
 
   return {
     label: "Session",
@@ -254,7 +251,7 @@ function quotaItemStatus(pctRemaining: number): SidebarItem["status"] {
 }
 
 function buildMonthProviderMap(): Map<string, number> {
-  return new Map(getMonthProviderRollups().map((r) => [r.name, totalTokens(r)]));
+  return new Map(getMonthProviderRollups().map((r) => [r.name, computeTotalTokens(r)]));
 }
 
 function windowsToEntries(quota: ProviderQuota): QuotaWindowEntry[] {
@@ -361,7 +358,7 @@ export function setLastReply(data: {
 export function buildSidebarItems(mode: DisplayMode): SidebarItem[] {
   const todayRows = getTodayRollups();
   const today = findTodayTotal(todayRows);
-  const todayTotalTokens = totalTokens(today);
+  const todayTotalTokens = computeTotalTokens(today);
   const budget = getBudgetInfo(todayTotalTokens);
   const todayItem: SidebarItem = {
     label: "Today",
@@ -398,12 +395,12 @@ export function buildSidebarItems(mode: DisplayMode): SidebarItem[] {
     ...buildBreakdownItems(today, todayTotalTokens),
     {
       label: "This Week",
-      value: `${formatTokens(weekTotal === null ? 0 : totalTokens(weekTotal))} tok`,
+      value: `${formatTokens(weekTotal === null ? 0 : computeTotalTokens(weekTotal))} tok`,
       status: "info",
     },
     {
       label: "This Month",
-      value: `${formatTokens(monthTotal === null ? 0 : totalTokens(monthTotal))} tok`,
+      value: `${formatTokens(monthTotal === null ? 0 : computeTotalTokens(monthTotal))} tok`,
       status: "info",
     },
   ];
