@@ -173,4 +173,84 @@ describe("recordEvent", () => {
 
     expect(rollupRuns).toHaveLength(0);
   });
+
+  it("updates rollups when reasoning-only changes (inp=0, out=0, reasoning increases)", () => {
+    const rollupRuns: unknown[][] = [];
+    const existingRow = {
+      ts: new Date("2026-03-12T09:55:00").getTime(),
+      provider: "anthropic",
+      agent: "builder",
+      inp: 0,
+      out: 0,
+      think: 0,
+      chat: 0,
+      code: 0,
+      cache_r: 0,
+      cache_w: 0,
+      cost: 0,
+    };
+    const db = createDb({ existingRow, rollupRuns, changesRow: { changes: 1 } });
+
+    getDbMock.mockReturnValue(db);
+
+    recordEvent(
+      buildRecord({
+        inp: 0,
+        out: 0,
+        reasoning: 100,
+        think: 0,
+        chat: 0,
+        code: 0,
+        cache_r: 0,
+        cache_w: 0,
+        cost: 0,
+      }),
+    );
+
+    expect(rollupRuns).toEqual([
+      ["2026-03-12", "provider", "anthropic", 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      ["2026-03-12", "agent", "builder", 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      ["2026-03-12", "total", "*", 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    ]);
+  });
+
+  it("updates rollups when cache-only changes (inp=0, out=0, cache_r increases)", () => {
+    const rollupRuns: unknown[][] = [];
+    const existingRow = {
+      ts: new Date("2026-03-12T09:55:00").getTime(),
+      provider: "anthropic",
+      agent: "builder",
+      inp: 0,
+      out: 0,
+      think: 0,
+      chat: 0,
+      code: 0,
+      cache_r: 0,
+      cache_w: 0,
+      cost: 0,
+    };
+    const db = createDb({ existingRow, rollupRuns, changesRow: { changes: 1 } });
+
+    getDbMock.mockReturnValue(db);
+
+    recordEvent(
+      buildRecord({
+        inp: 0,
+        out: 0,
+        reasoning: 0,
+        think: 0,
+        chat: 0,
+        code: 0,
+        cache_r: 500,
+        cache_w: 0,
+        cost: 0,
+      }),
+    );
+
+    expect(rollupRuns).toEqual([
+      ["2026-03-12", "provider", "anthropic", 0, 0, 0, 0, 0, 500, 0, 0, 0],
+      ["2026-03-12", "agent", "builder", 0, 0, 0, 0, 0, 500, 0, 0, 0],
+      ["2026-03-12", "total", "*", 0, 0, 0, 0, 0, 500, 0, 0, 0],
+    ]);
+  });
 });

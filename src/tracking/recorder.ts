@@ -244,7 +244,7 @@ export function recordEvent(record: EventRecord): void {
           code = excluded.code,
           tools = excluded.tools,
           cost = excluded.cost
-        WHERE excluded.inp + excluded.out > inp + out
+        WHERE excluded.inp + excluded.out + excluded.think + excluded.chat + excluded.code + excluded.cache_r + excluded.cache_w + excluded.reasoning + excluded.cost > inp + out + think + chat + code + cache_r + cache_w + reasoning + cost
       `,
     ).run(
       record.key,
