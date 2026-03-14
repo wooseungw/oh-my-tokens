@@ -6,6 +6,12 @@
 
 **oh-my-tokens** is an OpenCode plugin for per-provider, per-agent token usage tracking and analysis. Track exactly which provider, agent, and task type (think/chat/code) consumed tokens in real time.
 
+## Recent Updates
+
+- `feat` Auto-update notification — startup toast when newer version is available on npm
+- `refactor` Separator alignment — all dividers unified to 42 chars across commands
+- `docs` README preview — replaced screenshot images with terminal output code blocks
+
 ## Preview
 
 **`/omt`** — Today's summary with live provider quotas and budget status:
