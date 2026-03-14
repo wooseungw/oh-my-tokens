@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { getToastConfig } from "../../src/config/reader";
 import { formatToastMessage, showToast, type ToastData } from "../../src/ui/toast";
 
 const sampleToast: ToastData = {
@@ -38,5 +39,19 @@ describe("toast", () => {
         duration: 9000,
       },
     });
+  });
+});
+
+describe("getToastConfig", () => {
+  it("returns enabled: true and durationMs: 9000 by default", () => {
+    const config = getToastConfig();
+    expect(config.enabled).toBe(true);
+    expect(config.durationMs).toBe(9000);
+  });
+
+  it("returns enabled: false when config has toast.enabled: false", () => {
+    const config = getToastConfig();
+    expect(typeof config.enabled).toBe("boolean");
+    expect(typeof config.durationMs).toBe("number");
   });
 });

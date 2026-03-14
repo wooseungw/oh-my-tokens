@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 import type { BudgetConfig } from "../analytics/budget";
+import { findOpencodeConfigPath } from "../paths";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -62,4 +63,26 @@ export function extractBudgetConfig(raw: Record<string, unknown>): BudgetConfig 
   }
 
   return parsed;
+}
+
+export function getUnitSetting(): "tokens" | "cost" {
+  const cfg = readPluginConfigFromFile(findOpencodeConfigPath());
+  return cfg.unit === "cost" ? "cost" : "tokens";
+}
+
+export function getToastConfig(): { enabled: boolean; durationMs: number } {
+  const cfg = readPluginConfigFromFile(findOpencodeConfigPath());
+  const toast = cfg.toast;
+  const enabled = !(
+    typeof toast === "object" &&
+    toast !== null &&
+    (toast as Record<string, unknown>).enabled === false
+  );
+  const durationMs =
+    typeof toast === "object" &&
+    toast !== null &&
+    typeof (toast as Record<string, unknown>).durationMs === "number"
+      ? ((toast as Record<string, unknown>).durationMs as number)
+      : 9000;
+  return { enabled, durationMs };
 }

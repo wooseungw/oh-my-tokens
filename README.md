@@ -8,9 +8,9 @@
 
 ## Recent Updates
 
+- `fix` Re-enable toast notifications, wire toast.enabled config
 - `feat` Add getModelRollups and getHourlyTotals query functions for model and hourly aggregates
 - `fix` Setting annotations — annotate unit/lang settings as not yet implemented
-- `fix` Recorder — update rollup on reasoning/cache changes, not only inp+out
 
 ## Preview
 

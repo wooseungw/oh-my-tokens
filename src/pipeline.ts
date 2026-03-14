@@ -1,12 +1,15 @@
 import type { Hooks, PluginInput } from "@opencode-ai/plugin";
 import type { AssistantMessage, Event } from "@opencode-ai/sdk";
 
+import { computeTotalTokens } from "./analytics/token-math";
+import { getToastConfig } from "./config/reader";
 import { markCompacted, upsertSession } from "./storage/sessions";
 import { resolveAttribution } from "./tracking/attribution";
 import { classify } from "./tracking/classifier";
 import { normalizeDisplayProvider } from "./tracking/normalizer";
 import { recordEvent } from "./tracking/recorder";
 import { setCurrentSessionId, setLastReply } from "./ui/sidebar";
+import { showToast } from "./ui/toast";
 
 function isAssistantMessage(
   message: Event["properties"] extends never ? never : unknown,
@@ -136,7 +139,25 @@ export function createPipelineHooks(_input: PluginInput): Partial<Hooks> {
         model: message.modelID,
       });
 
-      // Toast disabled — sidebar + /omt commands only
+      if (getToastConfig().enabled) {
+        const toastData = {
+          think: breakdown.think,
+          chat: breakdown.chat,
+          code: breakdown.code,
+          total: computeTotalTokens({
+            inp: message.tokens.input,
+            out: message.tokens.output,
+            think: breakdown.think,
+            chat: breakdown.chat,
+            code: breakdown.code,
+            cache_r: message.tokens.cache.read,
+            cache_w: message.tokens.cache.write,
+          }),
+          provider,
+          model: message.modelID,
+        };
+        showToast(_input, toastData).catch(() => {});
+      }
     },
   };
 }
