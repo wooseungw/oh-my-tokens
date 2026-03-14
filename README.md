@@ -6,6 +6,27 @@
 
 **oh-my-tokens** is an OpenCode plugin for per-provider, per-agent token usage tracking and analysis. Track exactly which provider, agent, and task type (think/chat/code) consumed tokens in real time.
 
+## Preview
+
+![oh-my-tokens /omt summary](docs/images/omt-preview.png)
+
+![oh-my-tokens /omt agents](docs/images/omt-agents.png)
+
+## Quick Start
+
+1. **Install** the plugin:
+   ```bash
+   npm install oh-my-tokens
+   ```
+2. **Add** to your `opencode.json`:
+   ```json
+   { "plugin": ["oh-my-tokens"] }
+   ```
+3. **Restart** OpenCode — the plugin auto-configures enrichment and timezone.
+4. **Type `/omt`** in any chat session to see today's token summary with live provider quotas.
+
+Use `/omt agents` to see per-agent breakdowns, `/omt trend` for 7-day charts, or `/omt limits` to check provider quota windows directly.
+
 ## Features
 
 - **Provider Tracking** — Separate token usage by provider (Anthropic, OpenAI, Copilot, etc.)
@@ -28,7 +49,7 @@
 | openai | ✓ | ✓ | Unofficial | ChatGPT OAuth: 1h + weekly windows via chatgpt.com backend (undocumented) |
 | copilot | ✓ | ✓ | Official | Monthly premium request quota via GitHub billing API |
 | openrouter | ✓ | ✓ | Official | Credit balance (rolling) via openrouter.ai/api/v1/credits |
-| gemini | ✓ | — | — | Token tracking only; no quota API yet |
+| gemini | ✓ | Est. | Unofficial | API key probe + free-tier RPD estimate (~1K req/day) from community reports; actual remaining unknown |
 | google | ✓ | — | — | Token tracking only |
 | (any other) | ✓ | — | — | All OpenCode providers tracked; quota requires enrichment support |
 

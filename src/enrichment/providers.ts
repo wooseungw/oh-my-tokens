@@ -20,6 +20,7 @@ export interface ProviderQuota {
     hourly?: ProviderQuotaWindow;
     sevenDay?: ProviderQuotaWindow;
     weekly?: ProviderQuotaWindow;
+    daily?: ProviderQuotaWindow;
   };
 }
 
@@ -466,8 +467,39 @@ export async function fetchCopilotQuota(authToken: string): Promise<ProviderQuot
   }
 }
 
-export async function fetchGeminiQuota(_authToken: string): Promise<ProviderQuota | null> {
-  return null;
+export async function fetchGeminiQuota(authToken: string): Promise<ProviderQuota | null> {
+  const token = readAuthToken("gemini") ?? authToken;
+  if (!token) return null;
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(token)}&pageSize=1`,
+      { signal: AbortSignal.timeout(5000) },
+    );
+    if (!res.ok) return null;
+  } catch {
+    return null;
+  }
+
+  const GEMINI_FREE_TIER_RPD_REDDIT_EST = 1_000;
+  const PERCENT_REMAINING_UNKNOWN = 100;
+  const PST_OFFSET_MS = 8 * 60 * 60 * 1000;
+  const MS_PER_DAY = 86_400_000;
+  const resetMs = Math.ceil((Date.now() - PST_OFFSET_MS) / MS_PER_DAY) * MS_PER_DAY + PST_OFFSET_MS;
+
+  return {
+    provider: "gemini",
+    used: 0,
+    limit: GEMINI_FREE_TIER_RPD_REDDIT_EST,
+    unit: "requests",
+    planLabel: "free~",
+    windows: {
+      daily: {
+        percentRemaining: PERCENT_REMAINING_UNKNOWN,
+        resetTimeIso: new Date(resetMs).toISOString(),
+      },
+    },
+  };
 }
 
 export async function fetchOpenRouterQuota(authToken: string): Promise<ProviderQuota | null> {

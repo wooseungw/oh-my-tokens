@@ -25,13 +25,14 @@ The following table summarizes the support status for different providers:
 | openai | Yes | Unofficial | 1-hour, weekly (with reset times) | OAuth (auto-detected) or API key |
 | copilot | Yes | Official | Monthly (premium request count) | OAuth via GitHub (auto-detected) |
 | openrouter | Yes | Official | Rolling credit balance (no reset) | API key (auto-detected) |
-| gemini | No | — | None (token tracking only) | — |
+| gemini | Est. | Unofficial | Daily RPD estimate (no live usage) | API key (auto-detected) |
 | google | No | — | None (token tracking only) | — |
 | others | No | — | None (token tracking only) | — |
 
 ### API Types
 - **Official**: These providers offer a documented, public API for checking usage.
 - **Unofficial**: These are reverse-engineered from application traffic. They are more likely to break if the provider updates their internal services.
+- **Est.**: No live quota API is available via API key. The plugin probes the key for validity, then displays free-tier limits sourced from community reports (reddit.com/r/GoogleGeminiAI). Actual remaining requests are unknown, so usage is shown as a static estimate tagged `[est]`.
 
 ## Auto-Detection of Credentials
 

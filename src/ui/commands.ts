@@ -179,6 +179,17 @@ function buildProviderWeeklyQuotaLine(
   return buildProviderQuotaLine("📆", "wk", pctUsed, w.resetTimeIso);
 }
 
+function buildProviderEstDailyLine(
+  liveQuota: NonNullable<ReturnType<typeof getLiveQuota>>,
+): string {
+  const w = liveQuota.windows?.daily;
+  if (!w) return "";
+  const limitLabel =
+    liveQuota.limit > 0 ? `~${formatTokens(liveQuota.limit)} req/day` : "? req/day";
+  const resetStr = w.resetTimeIso ? `  resets ${formatTimeUntil(w.resetTimeIso)}` : "";
+  return `  📅 day   ${"░".repeat(BAR_WIDTH)}     ${limitLabel}${resetStr}  [est]`;
+}
+
 function buildProviderBlock(
   name: string,
   todayTok: number | undefined,
@@ -203,6 +214,9 @@ function buildProviderBlock(
     }
     if (windows.weekly) {
       lines.push(buildProviderWeeklyQuotaLine(liveQuota));
+    }
+    if (windows.daily) {
+      lines.push(buildProviderEstDailyLine(liveQuota));
     }
   }
 
@@ -631,7 +645,19 @@ function buildLiveQuotaLines(
   if (liveQuota.windows.weekly) {
     lines.push(buildWeeklyWindowLine(liveQuota));
   }
+  if (liveQuota.windows.daily) {
+    lines.push(buildEstDailyWindowLine(liveQuota));
+  }
   return lines;
+}
+
+function buildEstDailyWindowLine(liveQuota: NonNullable<ReturnType<typeof getLiveQuota>>): string {
+  const w = liveQuota.windows?.daily;
+  if (!w) return "";
+  const limitLabel =
+    liveQuota.limit > 0 ? `~${formatTokens(liveQuota.limit)} req/day` : "? req/day";
+  const resetStr = w.resetTimeIso ? `  resets ${formatTimeUntil(w.resetTimeIso)}` : "";
+  return `  📅 daily  ${"░".repeat(BAR_WIDTH)}     ${limitLabel}${resetStr}  [est]`;
 }
 
 function buildWeeklyWindowLine(liveQuota: NonNullable<ReturnType<typeof getLiveQuota>>): string {
