@@ -9,8 +9,8 @@
 
 ## Recent Updates
 
+- `test` Fix integration tests: remove stale vi.unmock, platform-aware postinstall env
 - `ci` Drop Node 18 (vitest/rolldown requires ≥20), fix Windows path separators in tests
-- `ci` Add pre-push hook (coverage + build), set fail-fast: false in CI matrix
 - `fix` Fix quota bar alignment by adding VS16 to emojis and dynamic icon+label padding
 
 ## Preview

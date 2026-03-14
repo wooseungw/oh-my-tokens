@@ -7,8 +7,6 @@ try {
   hasNodeSqlite = true;
 } catch {}
 
-vi.unmock("bun:sqlite");
-
 const { findOpenCodeDbPathMock } = vi.hoisted(() => ({
   findOpenCodeDbPathMock: vi.fn(() => null),
 }));

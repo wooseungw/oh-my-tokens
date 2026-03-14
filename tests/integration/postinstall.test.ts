@@ -34,6 +34,19 @@ function readJsonFile<T>(filePath: string): T {
   return JSON.parse(readFileSync(filePath, "utf8")) as T;
 }
 
+function buildConfigEnv(initCwd: string, configHome: string): Record<string, string> {
+  const env: Record<string, string> = {
+    INIT_CWD: initCwd,
+    npm_config_global: "false",
+  };
+  if (process.platform === "win32") {
+    env.APPDATA = configHome;
+  } else {
+    env.XDG_CONFIG_HOME = configHome;
+  }
+  return env;
+}
+
 function runPostinstall(env: Record<string, string>): PostinstallResult {
   const result = spawnSync(process.execPath, [postinstallScriptPath], {
     cwd: repoRoot,
@@ -67,11 +80,7 @@ describe("postinstall integration", () => {
     const omtConfigPath = join(configDir, "oh-my-tokens.json");
     mkdirSync(initCwd, { recursive: true });
 
-    const result = runPostinstall({
-      INIT_CWD: initCwd,
-      XDG_CONFIG_HOME: xdgConfigHome,
-      npm_config_global: "false",
-    });
+    const result = runPostinstall(buildConfigEnv(initCwd, xdgConfigHome));
 
     expect(result.exitCode).toBe(0);
     expect(existsSync(opencodeConfigPath)).toBe(true);
@@ -110,11 +119,7 @@ describe("postinstall integration", () => {
       "utf8",
     );
 
-    const result = runPostinstall({
-      INIT_CWD: initCwd,
-      XDG_CONFIG_HOME: xdgConfigHome,
-      npm_config_global: "false",
-    });
+    const result = runPostinstall(buildConfigEnv(initCwd, xdgConfigHome));
 
     expect(result.exitCode).toBe(0);
     expect(existsSync(omtConfigPath)).toBe(true);
@@ -148,11 +153,7 @@ describe("postinstall integration", () => {
       "utf8",
     );
 
-    const result = runPostinstall({
-      INIT_CWD: initCwd,
-      XDG_CONFIG_HOME: xdgConfigHome,
-      npm_config_global: "false",
-    });
+    const result = runPostinstall(buildConfigEnv(initCwd, xdgConfigHome));
 
     expect(result.exitCode).toBe(0);
     expect(existsSync(opencodeConfigPath)).toBe(true);
