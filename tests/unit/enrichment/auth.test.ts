@@ -1,3 +1,4 @@
+import { normalize } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { getAuthJsonCandidatePaths, readAuthToken } from "../../../src/enrichment/auth";
@@ -27,8 +28,9 @@ describe("auth utilities", () => {
     const appDataPath = "/tmp/appdata";
     process.env.APPDATA = appDataPath;
     const paths = getAuthJsonCandidatePaths();
+    const normalized = normalize(appDataPath);
 
-    expect(paths.some((p) => p.includes(appDataPath))).toBe(true);
+    expect(paths.some((p) => p.includes(normalized))).toBe(true);
     expect(paths.some((p) => p.includes("opencode"))).toBe(true);
   });
 
@@ -43,8 +45,9 @@ describe("auth utilities", () => {
     const localAppDataPath = "/tmp/localappdata";
     process.env.LOCALAPPDATA = localAppDataPath;
     const paths = getAuthJsonCandidatePaths();
+    const normalized = normalize(localAppDataPath);
 
-    expect(paths.some((p) => p.includes(localAppDataPath))).toBe(true);
+    expect(paths.some((p) => p.includes(normalized))).toBe(true);
     expect(paths.some((p) => p.includes("opencode"))).toBe(true);
   });
 

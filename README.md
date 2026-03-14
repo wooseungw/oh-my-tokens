@@ -2,15 +2,15 @@
 
 [![npm version](https://img.shields.io/npm/v/oh-my-tokens.svg)](https://www.npmjs.com/package/oh-my-tokens)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js >= 18](https://img.shields.io/badge/Node.js-%3E%3D%2018-brightgreen)](https://nodejs.org/)
+[![Node.js >= 20](https://img.shields.io/badge/Node.js-%3E%3D%2020-brightgreen)](https://nodejs.org/)
 [![Coverage](https://codecov.io/gh/wooseungw/oh-my-tokens/branch/main/graph/badge.svg)](https://codecov.io/gh/wooseungw/oh-my-tokens)
 
 **oh-my-tokens** is an OpenCode plugin for per-provider, per-agent token usage tracking and analysis. Track exactly which provider, agent, and task type (think/chat/code) consumed tokens in real time.
 
 ## Recent Updates
 
+- `ci` Drop Node 18 (vitest/rolldown requires ≥20), fix Windows path separators in tests
 - `ci` Add pre-push hook (coverage + build), set fail-fast: false in CI matrix
-- `fix` Add missing @vitest/coverage-v8 dep, lower unreachable coverage thresholds
 - `fix` Fix quota bar alignment by adding VS16 to emojis and dynamic icon+label padding
 
 ## Preview
@@ -239,7 +239,7 @@ Changes take effect after restarting OpenCode.
 
 ### Prerequisites
 
-- Node.js >= 18.0.0
+- Node.js >= 20.0.0
 - npm >= 9.0.0
 
 ### Commands
@@ -270,7 +270,7 @@ Failing checks block the commit.
 - **Formatter**: Biome (unified format + lint)
 - **Linter**: Biome with strict rules (no `any`, no unused imports)
 - **Tests**: vitest with unit + integration coverage
-- **CI**: Node.js 18/20/22 × Ubuntu/Windows/macOS matrix
+- **CI**: Node.js 20/22 × Ubuntu/Windows/macOS matrix
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed contribution guidelines.
 

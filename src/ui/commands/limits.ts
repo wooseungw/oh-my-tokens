@@ -119,10 +119,10 @@ function buildLocalWindowLines(
   textMode = false,
 ): string[] {
   const windows = [
-    { label: "⏱ hourly ", used: hourTotals.get(name) ?? 0, limit: cfg.limits.hourly },
+    { label: "⏱\uFE0F hourly ", used: hourTotals.get(name) ?? 0, limit: cfg.limits.hourly },
     { label: "📅 today  ", used: dayMap.get(name) ?? 0, limit: cfg.limits.daily },
     { label: "📆 weekly ", used: weekMap.get(name) ?? 0, limit: cfg.limits.weekly },
-    { label: "🗓 monthly", used: monthMap.get(name) ?? 0, limit: cfg.limits.monthly },
+    { label: "🗓\uFE0F monthly", used: monthMap.get(name) ?? 0, limit: cfg.limits.monthly },
   ].filter((window) => window.limit !== undefined || window.used > 0);
   return windows.map((window) => buildLocalWindowLine(window, textMode));
 }

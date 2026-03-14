@@ -180,9 +180,9 @@ describe("handleOmtCommand — limits subcommand", () => {
     const result = handleOmtCommand("limits", "ses_test");
     expect(result.text).toContain("ANTHROPIC");
     expect(result.text).toContain("Claude Max 5");
-    expect(result.text).toContain("⏱ hourly");
+    expect(result.text).toContain("⏱\uFE0F hourly");
     expect(result.text).toContain("📅 today");
-    expect(result.text).toContain("🗓 monthly");
+    expect(result.text).toContain("🗓\uFE0F monthly");
   });
 
   it("shows warning emoji when usage exceeds the configured limit", () => {

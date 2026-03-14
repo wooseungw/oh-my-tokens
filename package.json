@@ -50,7 +50,7 @@
     "url": "git+https://github.com/wooseungw/oh-my-tokens.git"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   },
   "peerDependencies": {
     "@opencode-ai/plugin": "^1.2.0"

@@ -79,6 +79,8 @@ vi.mock("../../../src/storage/migrations", () => ({
   runMigrations: runMigrationsMock,
 }));
 
+import path from "node:path";
+
 import { closeDb, getDb, queryAll, queryOne } from "../../../src/storage/db";
 
 describe("getDb", () => {
@@ -125,10 +127,13 @@ describe("getDb", () => {
     const db = getDb();
 
     expect(mkdirSyncMock).toHaveBeenCalledWith("/tmp/test-db", { recursive: true });
-    expect(databaseConstructorMock).toHaveBeenCalledWith("/tmp/test-db/oh-my-tokens.db", {
-      create: true,
-      readwrite: true,
-    });
+    expect(databaseConstructorMock).toHaveBeenCalledWith(
+      path.join("/tmp/test-db", "oh-my-tokens.db"),
+      {
+        create: true,
+        readwrite: true,
+      },
+    );
     expect(mockExec).toHaveBeenNthCalledWith(1, "PRAGMA journal_mode=WAL");
     expect(mockExec).toHaveBeenNthCalledWith(2, "PRAGMA busy_timeout=5000");
     expect(runMigrationsMock).toHaveBeenCalledWith(db);
