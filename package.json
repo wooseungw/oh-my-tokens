@@ -1,6 +1,6 @@
 {
   "name": "oh-my-tokens",
-  "version": "0.1.18",
+  "version": "0.2.0",
   "description": "OpenCode plugin: per-provider, per-agent, per-task-type token usage tracking and visualization",
   "type": "module",
   "main": "dist/index.js",
@@ -51,11 +51,11 @@
     "node": ">=18.0.0"
   },
   "peerDependencies": {
-    "@opencode-ai/plugin": "^1.1.0"
+    "@opencode-ai/plugin": "^1.2.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.6",
-    "@opencode-ai/plugin": "^1.1.14",
+    "@opencode-ai/plugin": "^1.2.0",
     "@types/node": "^25.5.0",
     "husky": "^9.1.0",
     "lint-staged": "^16.0.0",

@@ -9,9 +9,9 @@
 
 ## Recent Updates
 
+- `chore` Bump to 0.2.0, require @opencode-ai/plugin ^1.2.0
 - `fix` Remove env var budget fallback in sidebar
 - `ci` Add Codecov coverage reporting and README badge
-- `ci` Add CodeQL security scanning workflow
 
 ## Preview
 
