@@ -22,7 +22,7 @@
    ```json
    { "plugin": ["oh-my-tokens"] }
    ```
-3. **Restart** OpenCode — the plugin auto-configures enrichment and timezone.
+3. **Restart** OpenCode — the plugin auto-configures enrichment, timezone, and creates `oh-my-tokens.json` next to your `opencode.json`.
 4. **Type `/omt`** in any chat session to see today's token summary with live provider quotas.
 
 Use `/omt agents` to see per-agent breakdowns, `/omt trend` for 7-day charts, or `/omt limits` to check provider quota windows directly.
@@ -67,64 +67,48 @@ Add to `opencode.json`:
 }
 ```
 
-The plugin auto-configures on install via postinstall (adds enrichment:auto + timezone to opencode.json).
+The plugin auto-configures on install via postinstall — creates `oh-my-tokens.json` with enrichment and timezone defaults.
 
 ## Configuration
 
-Add to `opencode.json` under `experimental`:
+Settings live in `oh-my-tokens.json`, created automatically next to your `opencode.json`:
 
 ```jsonc
 {
-  "experimental": {
-    "oh-my-tokens": {
-      // Display unit: "tokens" (default) | "cost"
-      "unit": "tokens",
+  // Display mode: "compact" | "normal" | "extend" | "text"
+  "display": "normal",
 
-      // Enrichment mode: "off" (default) | "auto" | "manual" | "opencode-quota"
-      // - off: local tracking only
-      // - auto: auto-detect provider quotas via auth.json tokens
-      // - manual: user-specified provider budgets
-      // - opencode-quota: integrate with opencode-quota plugin
-      "enrichment": "auto",
+  // Display unit: "tokens" (default) | "cost"
+  "unit": "tokens",
 
-      // Toast notifications
-      "toast": {
-        "enabled": true,
-        "durationMs": 9000
-      },
+  // Enrichment mode: "off" | "auto" | "manual" | "opencode-quota"
+  "enrichment": "auto",
 
-      // Token budgets
-      "budget": {
-        "daily": 500000,
-        "weekly": 3000000,
-        "monthly": 10000000,
-        "timezone": "Asia/Seoul",      // IANA timezone — resets are computed in this zone
-        "dailyResetHour": 0,           // Hour (0–23) in the timezone above; default midnight
-        "weeklyResetDay": "monday"     // Weekday name (lowercase); default "monday"
-      },
+  // Token budgets
+  "budget": {
+    "daily": 500000,
+    "weekly": 3000000,
+    "monthly": 10000000,
+    "timezone": "Asia/Seoul",
+    "dailyResetHour": 0,
+    "weeklyResetDay": "monday"
+  },
 
-      // Cost budgets (optional, requires unit: "cost")
-      "costBudget": {
-        "daily": 5.00,
-        "weekly": 25.00,
-        "monthly": 100.00
-      },
+  // Toast notifications
+  "toast": {
+    "enabled": true,
+    "durationMs": 9000
+  },
 
-      // Manual provider budgets (enrichment: "manual" only)
-      "providers": {
-        "anthropic": { "budget": 500000, "unit": "tokens", "period": "monthly" },
-        "openai": { "budget": 1000000, "unit": "tokens", "period": "monthly" }
-      },
+  // Language: "auto" | "en" | "ko" | "ja" | "zh"
+  "lang": "auto",
 
-      // Language: "auto" | "en" | "ko" | "ja" | "zh"
-      "lang": "auto",
-
-      // Data retention (days)
-      "retention": 90
-    }
-  }
+  // Data retention (days)
+  "retention": 90
 }
 ```
+
+> **Upgrading from <0.1.17?** Run `npm install oh-my-tokens` — postinstall automatically migrates your existing `opencode.json` settings to `oh-my-tokens.json`.
 
 ## Commands
 
@@ -137,8 +121,9 @@ Add to `opencode.json` under `experimental`:
 | `/omt export [json\|csv]` | Export usage data in JSON or CSV format |
 | `/omt status` | Diagnostic info (detected providers, database size, pricing data freshness) |
 | `/omt rebuild` | Rebuild rollup aggregates from events table |
-| `/omt setting` | View all plugin settings from opencode.json |
-| `/omt setting <key> <value>` | Update a plugin setting in opencode.json (dot-notation for nested keys) |
+| `/omt setting` | View all plugin settings from `oh-my-tokens.json` |
+| `/omt setting <key>` | Show valid values and current value for a key |
+| `/omt setting <key> <value>` | Update a setting (validated; shows preview for `display`) |
 
 ### Output Example (`/omt`)
 
@@ -167,18 +152,21 @@ All command output is non-intrusive (`noReply: true`, `ignored: true`).
 
 ### Changing Settings via Command
 
-Instead of editing `opencode.json` manually, use `/omt setting`:
+Settings are stored in `oh-my-tokens.json`. Use `/omt setting` to view or change them:
 
 ```
 /omt setting                              → show all current settings
-/omt setting unit cost                    → set display unit to cost
+/omt setting display                      → show valid values for 'display' + current value
+/omt setting display text                 → set display mode (shows live preview immediately)
+/omt setting unit cost                    → set display unit
 /omt setting budget.daily 500000          → set daily token budget
-/omt setting budget.timezone Asia/Seoul   → set reset timezone
-/omt setting budget.dailyResetHour 9      → set daily reset hour (in that timezone)
+/omt setting budget.timezone Asia/Seoul   → set reset timezone (IANA validated)
+/omt setting budget.dailyResetHour 9      → set daily reset hour (0–23 validated)
 /omt setting toast.enabled false          → disable toast notifications
 ```
 
-Changes are written to the `opencode.json` found by walking up from cwd, or the global `~/.config/opencode/opencode.json`. **Restart OpenCode to apply.**
+Invalid values are rejected with a helpful error showing valid options.
+Changes take effect after restarting OpenCode.
 
 ## Enrichment Modes
 

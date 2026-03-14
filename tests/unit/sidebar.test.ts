@@ -153,6 +153,29 @@ describe("sidebar", () => {
     ]);
   });
 
+  it("builds text mode with same structure as extend when no live providers", () => {
+    process.env.OMT_DAILY_BUDGET_TOKENS = "100000";
+
+    expect(buildSidebarItems("text")).toEqual([
+      { label: "Reply", value: "🧠820 💬0 ⌨️1.8K 📦24.0K", status: "info" },
+      { label: "Session", value: "35.5K tok", status: "info" },
+      { label: "anthropic", value: "87.0K tok (75%)", status: "info" },
+      { label: "openai", value: "28.5K tok (25%)", status: "info" },
+      { label: "coder", value: "78.0K tok", status: "info" },
+      { label: "task", value: "37.5K tok", status: "info" },
+      { label: "Today", value: "115.5K tok", status: "error" },
+      { label: "Rate", value: "9.6K/h", status: "info" },
+      { label: "🧠 think", value: "10.0K (9%)", status: "info" },
+      { label: "💬 chat", value: "20.0K (17%)", status: "info" },
+      { label: "⌨️ code", value: "60.0K (52%)", status: "info" },
+      { label: "📥 input", value: "20.0K (17%)", status: "info" },
+      { label: "📦 cache", value: "5.5K (5%)", status: "info" },
+      { label: "This Week", value: "502.0K tok", status: "info" },
+      { label: "This Month", value: "2.3M tok", status: "info" },
+      { label: "Budget", value: "115.5K/100.0K day", status: "error" },
+    ]);
+  });
+
   it("builds extended mode with breakdown and period totals", () => {
     process.env.OMT_DAILY_BUDGET_TOKENS = "100000";
 

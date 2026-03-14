@@ -37,20 +37,23 @@ function detectTimezone() {
   }
 }
 
-function setNested(obj, dotKey, value) {
-  const keys = dotKey.split(".");
-  let cur = obj;
-  for (let i = 0; i < keys.length - 1; i++) {
-    const k = keys[i];
-    if (typeof cur[k] !== "object" || cur[k] === null) cur[k] = {};
-    cur = cur[k];
+function getOhMyTokensConfigPath(opencodeConfigPath) {
+  return join(dirname(opencodeConfigPath), "oh-my-tokens.json");
+}
+
+function migrateFromOpencodeJson(opencodeConfigPath, omtConfigPath) {
+  if (existsSync(omtConfigPath)) return;
+  if (!existsSync(opencodeConfigPath)) return;
+  let config;
+  try {
+    config = JSON.parse(readFileSync(opencodeConfigPath, "utf8"));
+  } catch {
+    return;
   }
-  const last = keys[keys.length - 1];
-  if (cur[last] === undefined) {
-    cur[last] = value;
-    return true;
-  }
-  return false;
+  const existing = config.experimental?.[PLUGIN_NAME];
+  if (!existing || typeof existing !== "object" || Object.keys(existing).length === 0) return;
+  writeFileSync(omtConfigPath, JSON.stringify(existing, null, 2) + "\n", "utf8");
+  console.log(`[oh-my-tokens] ✓ migrated settings from opencode.json → ${omtConfigPath}`);
 }
 
 function registerPlugin() {
@@ -69,37 +72,32 @@ function registerPlugin() {
     }
   }
 
-  const changes = [];
+  const opencodeChanges = [];
 
   if (!Array.isArray(config.plugin)) config.plugin = [];
   if (!config.plugin.includes(PLUGIN_NAME)) {
     config.plugin.push(PLUGIN_NAME);
-    changes.push("plugin registered");
+    opencodeChanges.push("plugin registered");
   }
 
-  if (typeof config.experimental !== "object" || config.experimental === null) {
-    config.experimental = {};
-  }
-  if (
-    typeof config.experimental[PLUGIN_NAME] !== "object" ||
-    config.experimental[PLUGIN_NAME] === null
-  ) {
-    config.experimental[PLUGIN_NAME] = {};
-  }
-  const cfg = config.experimental[PLUGIN_NAME];
-
-  if (setNested(cfg, "enrichment", "auto")) changes.push("enrichment: auto");
-
-  const tz = detectTimezone();
-  if (tz && setNested(cfg, "budget.timezone", tz)) changes.push(`budget.timezone: ${tz}`);
-
-  if (changes.length === 0) {
-    console.log(`[oh-my-tokens] Already configured in ${configPath}`);
-    return;
+  if (opencodeChanges.length > 0) {
+    writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n", "utf8");
+    console.log(`[oh-my-tokens] ✓ ${opencodeChanges.join(", ")} → ${configPath}`);
+  } else {
+    console.log(`[oh-my-tokens] Already registered in ${configPath}`);
   }
 
-  writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n", "utf8");
-  console.log(`[oh-my-tokens] ✓ ${changes.join(", ")} → ${configPath}`);
+  const omtConfigPath = getOhMyTokensConfigPath(configPath);
+  if (!existsSync(omtConfigPath)) {
+    const omtConfig = { enrichment: "auto" };
+    const tz = detectTimezone();
+    if (tz) omtConfig.budget = { timezone: tz };
+    writeFileSync(omtConfigPath, JSON.stringify(omtConfig, null, 2) + "\n", "utf8");
+    console.log(`[oh-my-tokens] ✓ created ${omtConfigPath}`);
+  } else {
+    console.log(`[oh-my-tokens] Config already exists: ${omtConfigPath}`);
+  }
+  migrateFromOpencodeJson(configPath, omtConfigPath);
 }
 
 const initCwd = process.env.INIT_CWD?.trim() || "";

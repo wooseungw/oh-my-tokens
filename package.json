@@ -1,6 +1,6 @@
 {
   "name": "oh-my-tokens",
-  "version": "0.1.16",
+  "version": "0.1.17",
   "description": "OpenCode plugin: per-provider, per-agent, per-task-type token usage tracking and visualization",
   "type": "module",
   "main": "dist/index.js",
@@ -30,7 +30,8 @@
     "prepare": "husky",
     "postinstall": "node scripts/postinstall.mjs",
     "verify:release-version": "node scripts/verify-release-version.mjs",
-    "pricing:refresh": "node scripts/refresh-modelsdev-pricing.mjs"
+    "pricing:refresh": "node scripts/refresh-modelsdev-pricing.mjs",
+    "deploy:dev": "npm run build && cp -r dist/. \"$HOME/.cache/opencode/node_modules/oh-my-tokens/dist/\" && echo \"✓ deployed to OpenCode cache\""
   },
   "keywords": [
     "opencode",

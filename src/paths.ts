@@ -89,6 +89,10 @@ export function findOpencodeConfigPath(): string {
   return getGlobalOpencodeConfigPath();
 }
 
+export function findOhMyTokensConfigPath(): string {
+  return path.join(path.dirname(findOpencodeConfigPath()), "oh-my-tokens.json");
+}
+
 export function getOhMyTokensDataDir(): string {
   const existingOpenCodeDir = getDataDirCandidates().find((candidate) => existsSync(candidate));
 

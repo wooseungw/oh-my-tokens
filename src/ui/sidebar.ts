@@ -16,7 +16,7 @@ export interface SidebarItem {
   status: "success" | "warning" | "error" | "info";
 }
 
-export type DisplayMode = "compact" | "normal" | "extend";
+export type DisplayMode = "compact" | "normal" | "extend" | "text";
 
 interface ReplyState {
   think: number;
@@ -326,6 +326,23 @@ function buildQuotaExtendItems(): SidebarItem[] {
   return items;
 }
 
+function buildQuotaTextItems(): SidebarItem[] {
+  const providers = getLiveProviders();
+  if (providers.length === 0) return [];
+  const items: SidebarItem[] = [];
+  const monthMap = buildMonthProviderMap();
+  for (const name of providers) {
+    for (const entry of collectWindowEntries(name, monthMap)) {
+      items.push({
+        label: `${name} ${entry.icon}${entry.label}`,
+        value: `${Math.round(entry.pct)}% left`,
+        status: quotaItemStatus(entry.pct),
+      });
+    }
+  }
+  return items;
+}
+
 export function setCurrentSessionId(sessionId: string): void {
   currentSessionId = sessionId;
 }
@@ -376,7 +393,7 @@ export function buildSidebarItems(mode: DisplayMode): SidebarItem[] {
   const weekTotal = getWeekTotal();
   const monthTotal = getMonthTotal();
 
-  return [
+  const extendBase: SidebarItem[] = [
     ...normalItems,
     ...buildBreakdownItems(today, todayTotalTokens),
     {
@@ -389,15 +406,20 @@ export function buildSidebarItems(mode: DisplayMode): SidebarItem[] {
       value: `${formatTokens(monthTotal === null ? 0 : totalTokens(monthTotal))} tok`,
       status: "info",
     },
-    ...buildQuotaExtendItems(),
-
-    {
-      label: "Budget",
-      value:
-        budget.limit === null
-          ? `${formatTokens(todayTotalTokens)} tok`
-          : `${formatTokens(todayTotalTokens)}/${formatTokens(budget.limit)} day`,
-      status: getBudgetStatus(budget.ratio),
-    },
   ];
+
+  const budgetItem: SidebarItem = {
+    label: "Budget",
+    value:
+      budget.limit === null
+        ? `${formatTokens(todayTotalTokens)} tok`
+        : `${formatTokens(todayTotalTokens)}/${formatTokens(budget.limit)} day`,
+    status: getBudgetStatus(budget.ratio),
+  };
+
+  if (mode === "text") {
+    return [...extendBase, ...buildQuotaTextItems(), budgetItem];
+  }
+
+  return [...extendBase, ...buildQuotaExtendItems(), budgetItem];
 }

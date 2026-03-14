@@ -11,7 +11,7 @@ import {
   readAuthJson,
 } from "./enrichment/providers";
 import { type EnrichmentConfig, normalizeMode, resolveEnrichment } from "./enrichment/resolver";
-import { findOpencodeConfigPath } from "./paths";
+import { findOhMyTokensConfigPath, findOpencodeConfigPath } from "./paths";
 import { createPipelineHooks } from "./pipeline";
 import { runBackfill } from "./storage/backfill";
 import { setWeeklyResetDay } from "./storage/rollup";
@@ -130,6 +130,14 @@ export function getSidebarItems(mode: DisplayMode) {
   return buildSidebarItems(mode);
 }
 function readPluginConfigFromFile(): Record<string, unknown> | undefined {
+  const omtConfigPath = findOhMyTokensConfigPath();
+  if (existsSync(omtConfigPath)) {
+    try {
+      return JSON.parse(readFileSync(omtConfigPath, "utf8")) as Record<string, unknown>;
+    } catch {
+      return undefined;
+    }
+  }
   const configPath = findOpencodeConfigPath();
   if (!existsSync(configPath)) return undefined;
   try {
