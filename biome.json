@@ -29,6 +29,13 @@
     }
   },
   "files": {
-    "includes": ["**", "!**/node_modules", "!**/dist", "!**/opencode-quota", "!**/*.min.json"]
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/opencode-quota",
+      "!**/*.min.json",
+      "!.sisyphus"
+    ]
   }
 }

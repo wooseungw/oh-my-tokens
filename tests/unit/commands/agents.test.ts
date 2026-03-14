@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
-
-import { buildAgentSummary } from "../../../src/ui/commands/agents";
 import type { RollupRow } from "../../../src/storage/rollup";
+import { buildAgentSummary } from "../../../src/ui/commands/agents";
 
 describe("buildAgentSummary", () => {
   it("should be a function", () => {
