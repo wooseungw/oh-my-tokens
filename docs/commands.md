@@ -163,4 +163,4 @@ View or update any plugin config key without editing `opencode.json` manually.
 /omt setting toast.enabled false          disable toast
 ```
 
-Changes are written to `opencode.json`. **Restart OpenCode to apply.**
+Changes are written to `oh-my-tokens.json`. **Restart OpenCode to apply.**
