@@ -1,6 +1,12 @@
-import { existsSync, readFileSync } from "node:fs";
-import { homedir } from "node:os";
-import path from "node:path";
+import { type AuthEntry, readAuthJson, readAuthToken } from "./auth";
+import {
+  isRecord,
+  parseUsageBody,
+  readFiniteNumber,
+  safeFetch,
+  sumNestedUsage,
+  type UsageBody,
+} from "./fetch-utils";
 
 export interface ProviderQuotaWindow {
   percentRemaining: number;
@@ -29,132 +35,6 @@ export interface EnrichmentProvider {
   fetchQuota(authToken: string): Promise<ProviderQuota | null>;
 }
 
-interface AuthEntry {
-  type?: string;
-  access?: string;
-  refresh?: string;
-  expires?: number;
-  accountId?: string;
-  key?: string;
-}
-
-export function getAuthJsonCandidatePaths(): string[] {
-  return [
-    path.join(homedir(), ".local", "share", "opencode", "auth.json"),
-    path.join(homedir(), ".config", "opencode", "auth.json"),
-    path.join(homedir(), "Library", "Application Support", "opencode", "auth.json"),
-  ];
-}
-
-export function readAuthJson(): Record<string, AuthEntry> | null {
-  for (const p of getAuthJsonCandidatePaths()) {
-    if (existsSync(p)) {
-      try {
-        return JSON.parse(readFileSync(p, "utf-8")) as Record<string, AuthEntry>;
-      } catch {}
-    }
-  }
-  return null;
-}
-
-export function readAuthToken(provider: string): string | null {
-  const auth = readAuthJson();
-  const entry = auth?.[provider];
-  if (!entry) return null;
-  if (entry.type === "oauth") return entry.access ?? null;
-  if (entry.type === "api") return entry.key ?? null;
-  return entry.access ?? entry.key ?? null;
-}
-
-function isTokenExpired(entry: AuthEntry): boolean {
-  return typeof entry.expires === "number" && entry.expires < Date.now();
-}
-
-interface UsageBody {
-  total_tokens?: number;
-  totalTokens?: number;
-  used_tokens?: number;
-  usedTokens?: number;
-  total_requests?: number;
-  totalRequests?: number;
-  used_requests?: number;
-  usedRequests?: number;
-  usage?: UsageBody;
-  data?: UsageBody[];
-  plan?: string;
-  tier?: string;
-  account_type?: string;
-  accountType?: string;
-  refreshes_at?: number;
-  refreshesAt?: number;
-  reset_at?: number;
-  resetAt?: number;
-  limit?: number;
-  total?: number;
-  included?: number;
-  usage_count?: number;
-  usageCount?: number;
-  used?: number;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function readFiniteNumber(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
-}
-
-function readBodyNumber(body: UsageBody, keys: (keyof UsageBody)[]): number | undefined {
-  for (const key of keys) {
-    const value = readFiniteNumber(body[key]);
-    if (value !== undefined) {
-      return value;
-    }
-  }
-  return undefined;
-}
-
-function parseUsageBody(value: unknown): UsageBody | null {
-  if (!isRecord(value)) {
-    return null;
-  }
-  return value as UsageBody;
-}
-
-function sumNestedUsage(body: UsageBody | null, unit: "tokens" | "requests"): number {
-  if (body === null) {
-    return 0;
-  }
-
-  const direct =
-    unit === "tokens"
-      ? readBodyNumber(body, ["used", "used_tokens", "usedTokens", "total_tokens", "totalTokens"])
-      : readBodyNumber(body, [
-          "used",
-          "used_requests",
-          "usedRequests",
-          "usage_count",
-          "usageCount",
-          "total_requests",
-          "totalRequests",
-        ]);
-
-  if (direct !== undefined) {
-    return direct;
-  }
-
-  if (body.usage !== undefined) {
-    return sumNestedUsage(body.usage, unit);
-  }
-
-  if (Array.isArray(body.data)) {
-    return body.data.reduce((total, item) => total + sumNestedUsage(parseUsageBody(item), unit), 0);
-  }
-
-  return 0;
-}
-
 function detectAnthropicTier(tokensLimit: number): string {
   if (tokensLimit <= 20_000) return "free";
   if (tokensLimit <= 40_000) return "tier_1";
@@ -181,7 +61,12 @@ function readHeaderNumber(headers: Headers, key: string): number | undefined {
 
 function readRefreshTime(body: UsageBody | null): number | undefined {
   if (body === null) return undefined;
-  return readBodyNumber(body, ["refreshes_at", "refreshesAt", "reset_at", "resetAt"]);
+  return (
+    readFiniteNumber(body.refreshes_at) ??
+    readFiniteNumber(body.refreshesAt) ??
+    readFiniteNumber(body.reset_at) ??
+    readFiniteNumber(body.resetAt)
+  );
 }
 
 function clampPercent(value: number): number {
@@ -219,57 +104,56 @@ const COPILOT_FALLBACK_LIMITS = {
 } as const;
 
 async function fetchAnthropicOAuthQuota(token: string): Promise<ProviderQuota | null> {
-  try {
-    const response = await fetch("https://api.anthropic.com/api/oauth/usage", {
-      headers: { Authorization: `Bearer ${token}`, "anthropic-beta": "oauth-2025-04-20" },
-    });
-    if (!response.ok) return null;
-    const data = (await response.json()) as {
-      five_hour?: { utilization?: number; resets_at?: string };
-      seven_day?: { utilization?: number; resets_at?: string };
-    };
-    const fiveHourUtil = data.five_hour?.utilization;
-    const sevenDayUtil = data.seven_day?.utilization;
-    if (fiveHourUtil === undefined && sevenDayUtil === undefined) return null;
-    return {
-      provider: "anthropic",
-      used: 0,
-      limit: 0,
-      unit: "tokens",
-      windows: {
-        ...(fiveHourUtil !== undefined && {
-          fiveHour: {
-            percentRemaining: clampPercent(100 - fiveHourUtil),
-            ...(data.five_hour?.resets_at !== undefined && {
-              resetTimeIso: data.five_hour.resets_at,
-            }),
-          },
-        }),
-        ...(sevenDayUtil !== undefined && {
-          sevenDay: {
-            percentRemaining: clampPercent(100 - sevenDayUtil),
-            ...(data.seven_day?.resets_at !== undefined && {
-              resetTimeIso: data.seven_day.resets_at,
-            }),
-          },
-        }),
-      },
-    };
-  } catch {
+  const data = (await safeFetch("https://api.anthropic.com/api/oauth/usage", {
+    headers: { Authorization: `Bearer ${token}`, "anthropic-beta": "oauth-2025-04-20" },
+  })) as {
+    five_hour?: { utilization?: number; resets_at?: string };
+    seven_day?: { utilization?: number; resets_at?: string };
+  } | null;
+  if (data === null) {
     return null;
   }
+
+  const fiveHourUtil = data.five_hour?.utilization;
+  const sevenDayUtil = data.seven_day?.utilization;
+  if (fiveHourUtil === undefined && sevenDayUtil === undefined) return null;
+  return {
+    provider: "anthropic",
+    used: 0,
+    limit: 0,
+    unit: "tokens",
+    windows: {
+      ...(fiveHourUtil !== undefined && {
+        fiveHour: {
+          percentRemaining: clampPercent(100 - fiveHourUtil),
+          ...(data.five_hour?.resets_at !== undefined && {
+            resetTimeIso: data.five_hour.resets_at,
+          }),
+        },
+      }),
+      ...(sevenDayUtil !== undefined && {
+        sevenDay: {
+          percentRemaining: clampPercent(100 - sevenDayUtil),
+          ...(data.seven_day?.resets_at !== undefined && {
+            resetTimeIso: data.seven_day.resets_at,
+          }),
+        },
+      }),
+    },
+  };
 }
 
 export async function fetchAnthropicQuota(authToken: string): Promise<ProviderQuota | null> {
   const auth = readAuthJson();
   const entry = auth?.anthropic;
+  const storedToken = readAuthToken("anthropic");
 
-  if (entry?.type === "oauth" && entry.access && !isTokenExpired(entry)) {
-    const result = await fetchAnthropicOAuthQuota(entry.access);
+  if (entry?.type === "oauth" && storedToken) {
+    const result = await fetchAnthropicOAuthQuota(storedToken);
     if (result !== null) return result;
   }
 
-  const apiKey = (entry?.type === "api" ? entry.key : undefined) ?? authToken;
+  const apiKey = (entry?.type === "api" ? storedToken : undefined) ?? authToken;
   if (!apiKey) return null;
 
   try {
@@ -296,72 +180,72 @@ export async function fetchAnthropicQuota(authToken: string): Promise<ProviderQu
 }
 
 async function fetchOpenAIOAuthQuota(token: string): Promise<ProviderQuota | null> {
-  try {
-    const headers: Record<string, string> = {
-      Authorization: `Bearer ${token}`,
-      "User-Agent": "oh-my-tokens/1.0",
-    };
-    const payload = decodeJwtPayload(token);
-    if (isRecord(payload?.["https://api.openai.com/auth"])) {
-      const authClaim = payload["https://api.openai.com/auth"] as Record<string, unknown>;
-      if (typeof authClaim.chatgpt_account_id === "string") {
-        headers["ChatGPT-Account-Id"] = authClaim.chatgpt_account_id;
-      }
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${token}`,
+    "User-Agent": "oh-my-tokens/1.0",
+  };
+  const payload = decodeJwtPayload(token);
+  if (isRecord(payload?.["https://api.openai.com/auth"])) {
+    const authClaim = payload["https://api.openai.com/auth"] as Record<string, unknown>;
+    if (typeof authClaim.chatgpt_account_id === "string") {
+      headers["ChatGPT-Account-Id"] = authClaim.chatgpt_account_id;
     }
-    const response = await fetch("https://chatgpt.com/backend-api/wham/usage", { headers });
-    if (!response.ok) return null;
-    const data = (await response.json()) as {
-      plan_type?: string;
-      rate_limit?: {
-        primary_window?: { used_percent: number; reset_after_seconds: number; reset_at?: number };
-        secondary_window?: {
-          used_percent: number;
-          reset_after_seconds: number;
-          reset_at?: number;
-        } | null;
+  }
+
+  const data = (await safeFetch("https://chatgpt.com/backend-api/wham/usage", { headers })) as {
+    plan_type?: string;
+    rate_limit?: {
+      primary_window?: { used_percent: number; reset_after_seconds: number; reset_at?: number };
+      secondary_window?: {
+        used_percent: number;
+        reset_after_seconds: number;
+        reset_at?: number;
       } | null;
-    };
-    const primary = data.rate_limit?.primary_window;
-    if (!primary) return null;
-    const secondary = data.rate_limit?.secondary_window ?? null;
-    return {
-      provider: "openai",
-      used: 0,
-      limit: 0,
-      unit: "tokens",
-      planLabel: data.plan_type,
-      windows: {
-        hourly: {
-          percentRemaining: clampPercent(100 - primary.used_percent),
-          resetTimeIso:
-            resetIsoFromTimestamp(primary.reset_at) ??
-            resetIsoFromNowSeconds(primary.reset_after_seconds),
-        },
-        ...(secondary && {
-          weekly: {
-            percentRemaining: clampPercent(100 - secondary.used_percent),
-            resetTimeIso:
-              resetIsoFromTimestamp(secondary.reset_at) ??
-              resetIsoFromNowSeconds(secondary.reset_after_seconds),
-          },
-        }),
-      },
-    };
-  } catch {
+    } | null;
+  } | null;
+  if (data === null) {
     return null;
   }
+
+  const primary = data.rate_limit?.primary_window;
+  if (!primary) return null;
+  const secondary = data.rate_limit?.secondary_window ?? null;
+  return {
+    provider: "openai",
+    used: 0,
+    limit: 0,
+    unit: "tokens",
+    planLabel: data.plan_type,
+    windows: {
+      hourly: {
+        percentRemaining: clampPercent(100 - primary.used_percent),
+        resetTimeIso:
+          resetIsoFromTimestamp(primary.reset_at) ??
+          resetIsoFromNowSeconds(primary.reset_after_seconds),
+      },
+      ...(secondary && {
+        weekly: {
+          percentRemaining: clampPercent(100 - secondary.used_percent),
+          resetTimeIso:
+            resetIsoFromTimestamp(secondary.reset_at) ??
+            resetIsoFromNowSeconds(secondary.reset_after_seconds),
+        },
+      }),
+    },
+  };
 }
 
 export async function fetchOpenAIQuota(authToken: string): Promise<ProviderQuota | null> {
   const auth = readAuthJson();
   const entry = auth?.openai;
+  const storedToken = readAuthToken("openai");
 
-  if (entry?.type === "oauth" && entry.access && !isTokenExpired(entry)) {
-    const result = await fetchOpenAIOAuthQuota(entry.access);
+  if (entry?.type === "oauth" && storedToken) {
+    const result = await fetchOpenAIOAuthQuota(storedToken);
     if (result !== null) return result;
   }
 
-  const apiKey = (entry?.type === "api" ? entry.key : undefined) ?? authToken;
+  const apiKey = (entry?.type === "api" ? storedToken : undefined) ?? authToken;
   if (!apiKey) return null;
 
   try {
@@ -389,7 +273,7 @@ export async function fetchOpenAIQuota(authToken: string): Promise<ProviderQuota
 
 export async function fetchCopilotQuota(authToken: string): Promise<ProviderQuota | null> {
   const auth = readAuthJson();
-  const entry =
+  const entry: AuthEntry | undefined =
     auth?.["github-copilot"] ??
     auth?.copilot ??
     auth?.["copilot-chat"] ??
@@ -399,75 +283,60 @@ export async function fetchCopilotQuota(authToken: string): Promise<ProviderQuot
     (entry?.type === "oauth" ? (entry.access ?? entry.refresh) : undefined) ?? authToken;
   if (!token) return null;
 
-  try {
-    const userResponse = await fetch("https://api.github.com/user", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-        "User-Agent": "oh-my-tokens/1.0",
-      },
-    });
-    if (!userResponse.ok) return null;
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    "User-Agent": "oh-my-tokens/1.0",
+  };
 
-    const userData = (await userResponse.json()) as { login?: string };
-    const username = userData.login?.trim();
-    if (!username) return null;
+  const userData = (await safeFetch("https://api.github.com/user", { headers })) as {
+    login?: string;
+  } | null;
+  const username = userData?.login?.trim();
+  if (!username) return null;
 
-    const usageResponse = await fetch(
-      `https://api.github.com/users/${encodeURIComponent(username)}/settings/billing/premium_request/usage`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/vnd.github+json",
-          "X-GitHub-Api-Version": "2022-11-28",
-          "User-Agent": "oh-my-tokens/1.0",
-        },
-      },
-    );
-    if (!usageResponse.ok) return null;
-
-    const usageData = (await usageResponse.json()) as {
-      usage_items?: Array<{
-        sku?: string;
-        gross_quantity?: number;
-        net_quantity?: number;
-        limit?: number;
-      }>;
-    };
-
-    const items = Array.isArray(usageData.usage_items) ? usageData.usage_items : [];
-    const premiumItem =
-      items.find((item) => typeof item.sku === "string" && item.sku.includes("Premium")) ??
-      items[0];
-    if (!premiumItem) return null;
-
-    const used = premiumItem.gross_quantity ?? premiumItem.net_quantity ?? 0;
-    const limit = premiumItem.limit ?? COPILOT_FALLBACK_LIMITS.pro;
-    const percentRemaining = limit > 0 ? clampPercent(((limit - used) / limit) * 100) : 0;
-
-    const now = new Date();
-    const resetTimeIso = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
-    ).toISOString();
-    const refreshesAt = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
-    ).getTime();
-
-    return {
-      provider: "copilot",
-      used,
-      limit,
-      unit: "requests",
-      refreshesAt,
-      windows: {
-        // Re-use the "weekly" slot to surface the monthly window in buildLimitsSummary
-        weekly: { percentRemaining, resetTimeIso },
-      },
-    };
-  } catch {
+  const usageData = (await safeFetch(
+    `https://api.github.com/users/${encodeURIComponent(username)}/settings/billing/premium_request/usage`,
+    { headers },
+  )) as {
+    usage_items?: Array<{
+      sku?: string;
+      gross_quantity?: number;
+      net_quantity?: number;
+      limit?: number;
+    }>;
+  } | null;
+  if (usageData === null) {
     return null;
   }
+
+  const items = Array.isArray(usageData.usage_items) ? usageData.usage_items : [];
+  const premiumItem =
+    items.find((item) => typeof item.sku === "string" && item.sku.includes("Premium")) ?? items[0];
+  if (!premiumItem) return null;
+
+  const used = premiumItem.gross_quantity ?? premiumItem.net_quantity ?? 0;
+  const limit = premiumItem.limit ?? COPILOT_FALLBACK_LIMITS.pro;
+  const percentRemaining = limit > 0 ? clampPercent(((limit - used) / limit) * 100) : 0;
+
+  const now = new Date();
+  const resetTimeIso = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
+  ).toISOString();
+  const refreshesAt = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).getTime();
+
+  return {
+    provider: "copilot",
+    used,
+    limit,
+    unit: "requests",
+    refreshesAt,
+    windows: {
+      // Re-use the "weekly" slot to surface the monthly window in buildLimitsSummary
+      weekly: { percentRemaining, resetTimeIso },
+    },
+  };
 }
 
 export async function fetchGeminiQuota(authToken: string): Promise<ProviderQuota | null> {
@@ -508,32 +377,30 @@ export async function fetchGeminiQuota(authToken: string): Promise<ProviderQuota
 export async function fetchOpenRouterQuota(authToken: string): Promise<ProviderQuota | null> {
   const token = readAuthToken("openrouter") ?? authToken;
   if (!token) return null;
-  try {
-    const response = await fetch("https://openrouter.ai/api/v1/credits", {
-      headers: { Authorization: `Bearer ${token}`, "HTTP-Referer": "oh-my-tokens" },
-    });
-    if (!response.ok) return null;
-    const data = (await response.json()) as { data?: { credits?: number; usage?: number } };
-    const remaining = data.data?.credits;
-    const usage = data.data?.usage;
-    if (remaining === undefined && usage === undefined) return null;
-    const usedAmt = usage ?? 0;
-    const remainingAmt = remaining ?? 0;
-    const total = usedAmt + remainingAmt;
-    const percentRemaining = total > 0 ? clampPercent((remainingAmt / total) * 100) : 100;
-    return {
-      provider: "openrouter",
-      used: usedAmt,
-      limit: total,
-      unit: "credits",
-      windows: {
-        // Re-use the "weekly" slot for the running balance (no time-based reset)
-        weekly: { percentRemaining },
-      },
-    };
-  } catch {
+  const data = (await safeFetch("https://openrouter.ai/api/v1/credits", {
+    headers: { Authorization: `Bearer ${token}`, "HTTP-Referer": "oh-my-tokens" },
+  })) as { data?: { credits?: number; usage?: number } } | null;
+  if (data === null) {
     return null;
   }
+
+  const remaining = data.data?.credits;
+  const usage = data.data?.usage;
+  if (remaining === undefined && usage === undefined) return null;
+  const usedAmt = usage ?? 0;
+  const remainingAmt = remaining ?? 0;
+  const total = usedAmt + remainingAmt;
+  const percentRemaining = total > 0 ? clampPercent((remainingAmt / total) * 100) : 100;
+  return {
+    provider: "openrouter",
+    used: usedAmt,
+    limit: total,
+    unit: "credits",
+    windows: {
+      // Re-use the "weekly" slot for the running balance (no time-based reset)
+      weekly: { percentRemaining },
+    },
+  };
 }
 export const ENRICHMENT_PROVIDERS: Record<
   string,

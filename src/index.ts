@@ -5,11 +5,8 @@ import type { Plugin } from "@opencode-ai/plugin";
 import { type BudgetConfig, setBudgetConfig } from "./analytics/budget";
 import { type ProviderConfig, setProviderConfigs } from "./analytics/plans";
 import { setLiveQuotas } from "./analytics/quota";
-import {
-  getAuthJsonCandidatePaths,
-  type ProviderQuota,
-  readAuthJson,
-} from "./enrichment/providers";
+import { getAuthJsonCandidatePaths, readAuthJson } from "./enrichment/auth";
+import type { ProviderQuota } from "./enrichment/providers";
 import { type EnrichmentConfig, normalizeMode, resolveEnrichment } from "./enrichment/resolver";
 import { findOhMyTokensConfigPath, findOpencodeConfigPath } from "./paths";
 import { createPipelineHooks } from "./pipeline";
