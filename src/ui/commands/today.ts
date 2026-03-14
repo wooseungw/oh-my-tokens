@@ -13,6 +13,8 @@ import {
   formatTimeUntil,
   formatUsageLine,
   LABEL_AREA_MIN,
+  padVisualEnd,
+  QUOTA_PREFIX_WIDTH,
   visualWidth,
 } from "../render";
 
@@ -87,20 +89,22 @@ function buildProviderWeeklyQuotaLine(
   const pctUsed = Math.round(100 - w.percentRemaining);
   if (liveQuota.unit === "credits" && liveQuota.limit > 0) {
     const remaining = liveQuota.limit - liveQuota.used;
+    const prefix = padVisualEnd("💳 wk", QUOTA_PREFIX_WIDTH);
     if (textMode) {
-      return `  💳 wk    ${`${pctUsed}%`.padStart(4)} used  $${remaining.toFixed(2)} / $${liveQuota.limit.toFixed(2)}  [live]`;
+      return `  ${prefix}   ${`${pctUsed}%`.padStart(4)} used  $${remaining.toFixed(2)} / $${liveQuota.limit.toFixed(2)}  [live]`;
     }
-    return `  💳 wk    ${buildBar(pctUsed)} ${`${pctUsed}%`.padStart(4)}  $${remaining.toFixed(2)} / $${liveQuota.limit.toFixed(2)}  [live]`;
+    return `  ${prefix}   ${buildBar(pctUsed)} ${`${pctUsed}%`.padStart(4)}  $${remaining.toFixed(2)} / $${liveQuota.limit.toFixed(2)}  [live]`;
   }
   if (liveQuota.unit === "requests" && liveQuota.limit > 0) {
     const used = Math.round(liveQuota.used);
     const resetStr = w.resetTimeIso
       ? `  resets ${new Date(w.resetTimeIso).toLocaleString("en-US", { month: "short", day: "numeric" })}`
       : "";
+    const prefix = padVisualEnd("🗓\uFE0F mo", QUOTA_PREFIX_WIDTH);
     if (textMode) {
-      return `  🗓 mo    ${`${pctUsed}%`.padStart(4)} used  ${used} / ${liveQuota.limit} req${resetStr}  [live]`;
+      return `  ${prefix}   ${`${pctUsed}%`.padStart(4)} used  ${used} / ${liveQuota.limit} req${resetStr}  [live]`;
     }
-    return `  🗓 mo    ${buildBar(pctUsed)} ${`${pctUsed}%`.padStart(4)}  ${used} / ${liveQuota.limit} req${resetStr}  [live]`;
+    return `  ${prefix}   ${buildBar(pctUsed)} ${`${pctUsed}%`.padStart(4)}  ${used} / ${liveQuota.limit} req${resetStr}  [live]`;
   }
   return buildProviderQuotaLine("📆", "wk", pctUsed, w.resetTimeIso, textMode);
 }
@@ -114,10 +118,11 @@ function buildProviderEstDailyLine(
   const limitLabel =
     liveQuota.limit > 0 ? `~${formatTokens(liveQuota.limit)} req/day` : "? req/day";
   const resetStr = w.resetTimeIso ? `  resets ${formatTimeUntil(w.resetTimeIso)}` : "";
+  const prefix = padVisualEnd("📅 day", QUOTA_PREFIX_WIDTH);
   if (textMode) {
-    return `  📅 day   ${limitLabel}${resetStr}  [est]`;
+    return `  ${prefix}   ${limitLabel}${resetStr}  [est]`;
   }
-  return `  📅 day   ${"░".repeat(BAR_WIDTH)}     ${limitLabel}${resetStr}  [est]`;
+  return `  ${prefix}   ${"░".repeat(BAR_WIDTH)}     ${limitLabel}${resetStr}  [est]`;
 }
 
 function buildProviderBlock(
@@ -134,17 +139,19 @@ function buildProviderBlock(
     if (windows.fiveHour) {
       const pctUsed = Math.round(100 - windows.fiveHour.percentRemaining);
       lines.push(
-        buildProviderQuotaLine("⏱", "5h", pctUsed, windows.fiveHour.resetTimeIso, textMode),
+        buildProviderQuotaLine("⏱\uFE0F", "5h", pctUsed, windows.fiveHour.resetTimeIso, textMode),
       );
     }
     if (windows.hourly) {
       const pctUsed = Math.round(100 - windows.hourly.percentRemaining);
-      lines.push(buildProviderQuotaLine("⏱", "1h", pctUsed, windows.hourly.resetTimeIso, textMode));
+      lines.push(
+        buildProviderQuotaLine("⏱\uFE0F", "1h", pctUsed, windows.hourly.resetTimeIso, textMode),
+      );
     }
     if (windows.sevenDay) {
       const pctUsed = Math.round(100 - windows.sevenDay.percentRemaining);
       lines.push(
-        buildProviderQuotaLine("🗓", "7d", pctUsed, windows.sevenDay.resetTimeIso, textMode),
+        buildProviderQuotaLine("🗓\uFE0F", "7d", pctUsed, windows.sevenDay.resetTimeIso, textMode),
       );
     }
     if (windows.weekly) {

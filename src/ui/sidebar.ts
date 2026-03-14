@@ -248,13 +248,13 @@ function windowsToEntries(quota: ProviderQuota): QuotaWindowEntry[] {
   if (windows === undefined) return [];
   const entries: QuotaWindowEntry[] = [];
   if (windows.fiveHour !== undefined)
-    entries.push({ icon: "⏱", label: "5h", pct: windows.fiveHour.percentRemaining });
+    entries.push({ icon: "⏱\uFE0F", label: "5h", pct: windows.fiveHour.percentRemaining });
   if (windows.hourly !== undefined)
-    entries.push({ icon: "⏱", label: "1h", pct: windows.hourly.percentRemaining });
+    entries.push({ icon: "⏱\uFE0F", label: "1h", pct: windows.hourly.percentRemaining });
   if (windows.sevenDay !== undefined)
-    entries.push({ icon: "🗓", label: "7d", pct: windows.sevenDay.percentRemaining });
+    entries.push({ icon: "🗓\uFE0F", label: "7d", pct: windows.sevenDay.percentRemaining });
   if (windows.weekly !== undefined) {
-    const icon = quota.unit === "credits" ? "💳" : "🗓";
+    const icon = quota.unit === "credits" ? "💳" : "🗓\uFE0F";
     const label = quota.unit === "requests" ? "mo" : "wk";
     entries.push({ icon, label, pct: windows.weekly.percentRemaining });
   }
@@ -271,7 +271,7 @@ function tierToEntry(
   if (estimate === undefined) return null;
   const monthUsed = monthMap.get(provider) ?? 0;
   const pct = Math.max(0, 100 - (monthUsed / estimate) * 100);
-  return { icon: "🗓", label: "mo~", pct };
+  return { icon: "🗓\uFE0F", label: "mo~", pct };
 }
 
 function collectWindowEntries(provider: string, monthMap: Map<string, number>): QuotaWindowEntry[] {

@@ -40,7 +40,7 @@ function buildLiveQuotaLines(
   if (!liveQuota?.windows) return lines;
   if (liveQuota.windows.fiveHour) {
     lines.push(
-      buildLiveWindowLine("⏱", "5-hour ", liveQuota.windows.fiveHour, undefined, textMode),
+      buildLiveWindowLine("⏱\uFE0F", "5-hour ", liveQuota.windows.fiveHour, undefined, textMode),
     );
   }
   if (liveQuota.windows.hourly) {
@@ -50,11 +50,11 @@ function buildLiveQuotaLines(
       limitTok !== undefined
         ? `${formatTokens(Math.round(limitTok * ((100 - w.percentRemaining) / 100))).padStart(7)} / ${formatTokens(limitTok)}`
         : undefined;
-    lines.push(buildLiveWindowLine("⏱", "hourly ", w, tokStr, textMode));
+    lines.push(buildLiveWindowLine("⏱\uFE0F", "hourly ", w, tokStr, textMode));
   }
   if (liveQuota.windows.sevenDay) {
     lines.push(
-      buildLiveWindowLine("🗓", "7-day  ", liveQuota.windows.sevenDay, undefined, textMode),
+      buildLiveWindowLine("🗓\uFE0F", "7-day  ", liveQuota.windows.sevenDay, undefined, textMode),
     );
   }
   if (liveQuota.windows.weekly) {
@@ -102,9 +102,9 @@ function buildWeeklyWindowLine(
       : "";
     const pctUsed = 100 - w.percentRemaining;
     if (textMode) {
-      return `  🗓 monthly ${`${Math.round(pctUsed)}%`.padStart(4)} used  [live]  ${used} / ${liveQuota.limit} req${resetLabel}`;
+      return `  🗓\uFE0F monthly ${`${Math.round(pctUsed)}%`.padStart(4)} used  [live]  ${used} / ${liveQuota.limit} req${resetLabel}`;
     }
-    return `  🗓 monthly ${buildBar(pctUsed)} ${`${Math.round(pctUsed)}%`.padStart(4)}  [live]  ${used} / ${liveQuota.limit} req${resetLabel}`;
+    return `  🗓\uFE0F monthly ${buildBar(pctUsed)} ${`${Math.round(pctUsed)}%`.padStart(4)}  [live]  ${used} / ${liveQuota.limit} req${resetLabel}`;
   }
   return buildLiveWindowLine("📆", "weekly ", w, undefined, textMode);
 }

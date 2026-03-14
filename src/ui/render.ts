@@ -4,6 +4,7 @@ export const SECTION_WIDTH = 42;
 export const SECTION_RULE = "═".repeat(SECTION_WIDTH);
 export const BAR_WIDTH = 16;
 export const LABEL_AREA_MIN = 10;
+export const QUOTA_PREFIX_WIDTH = 6;
 
 export function visualWidth(s: string): number {
   let width = 0;
@@ -93,8 +94,9 @@ export function buildProviderQuotaLine(
 ): string {
   const pctStr = `${pctUsed}%`.padStart(4);
   const resetStr = resetTimeIso ? `  resets ${formatTimeUntil(resetTimeIso)}` : "";
+  const prefix = padVisualEnd(`${icon} ${label}`, QUOTA_PREFIX_WIDTH);
   if (textMode) {
-    return `  ${icon} ${padVisualEnd(label, 3)}   ${pctStr} used${resetStr}  [live]`;
+    return `  ${prefix}   ${pctStr} used${resetStr}  [live]`;
   }
-  return `  ${icon} ${padVisualEnd(label, 3)}   ${buildBar(pctUsed)} ${pctStr}${resetStr}  [live]`;
+  return `  ${prefix}   ${buildBar(pctUsed)} ${pctStr}${resetStr}  [live]`;
 }
