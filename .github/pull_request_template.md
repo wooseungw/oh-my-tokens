@@ -14,4 +14,6 @@ Use `Fixes #...` or `Refs #...` when available.
 - [ ] `npm run build` passes
 - [ ] No new `any` types introduced
 - [ ] Tests added/updated for changed behavior
-- [ ] README updated for user-facing changes
+- [ ] `docs/` updated for changed commands, config, or providers (see [Documentation Policy](../CONTRIBUTING.md#documentation-policy))
+- [ ] `CONTRIBUTING.md` Source Architecture updated for new/renamed/deleted source files
+- [ ] `README.md` updated for user-facing behavior changes
