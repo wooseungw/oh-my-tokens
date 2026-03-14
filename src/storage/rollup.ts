@@ -16,6 +16,20 @@ export interface RollupRow {
   count: number;
 }
 
+export interface SessionSummary {
+  sid: string;
+  date: string;
+  inp: number;
+  out: number;
+  think: number;
+  chat: number;
+  code: number;
+  cache_r: number;
+  cache_w: number;
+  cost: number;
+  count: number;
+}
+
 interface AggregateRow {
   inp: number | null;
   out: number | null;
@@ -174,6 +188,34 @@ export function getSessionTotals(sessionId: string): {
     cost: row.cost ?? 0,
     count: row.count,
   };
+}
+
+export function getTopSessions(days = 7, limit = 15): SessionSummary[] {
+  const sinceMs = Date.now() - days * 24 * 60 * 60 * 1000;
+
+  return queryAll<SessionSummary>(
+    `
+      SELECT
+        sid,
+        date(ts / 1000, 'unixepoch', 'localtime') AS date,
+        SUM(inp) AS inp,
+        SUM(out) AS out,
+        SUM(think) AS think,
+        SUM(chat) AS chat,
+        SUM(code) AS code,
+        SUM(cache_r) AS cache_r,
+        SUM(cache_w) AS cache_w,
+        SUM(cost) AS cost,
+        COUNT(*) AS count
+      FROM events
+      WHERE ts >= ?
+      GROUP BY sid
+      ORDER BY (SUM(inp) + SUM(out) + SUM(think) + SUM(cache_r) + SUM(cache_w)) DESC
+      LIMIT ?
+    `,
+    sinceMs,
+    limit,
+  );
 }
 
 export function getWeekTotal(): RollupRow | null {

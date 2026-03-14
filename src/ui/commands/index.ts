@@ -7,6 +7,7 @@ import { buildAgentSummary } from "./agents";
 import { buildBudgetSummary } from "./budget-cmd";
 import { buildLimitsSummary } from "./limits";
 import { buildExportOutput, buildStatusOutput, handleOmtRebuild } from "./misc";
+import { buildSessionsSummary } from "./sessions";
 import { buildSettingCommandOutput } from "./setting";
 import { buildTodaySummary } from "./today";
 import { buildTrendSummary } from "./trend";
@@ -55,6 +56,8 @@ function buildCommandText(
       return handleOmtRebuild();
     case "limits":
       return buildLimitsSummary(textMode);
+    case "sessions":
+      return buildSessionsSummary();
     case "setting":
       return buildSettingCommandOutput(command.rawTail, applyConfig);
     default:
