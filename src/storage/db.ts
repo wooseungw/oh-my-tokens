@@ -1,26 +1,23 @@
-import type { Database } from "bun:sqlite";
+import { Database as BunDatabase } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 
 import { getOhMyTokensDataDir } from "../paths";
 import { runMigrations } from "./migrations";
 
-const sqliteModule = await import("bun:sqlite");
-const DatabaseConstructor = sqliteModule.Database;
+let dbSingleton: BunDatabase | null = null;
 
-const dataDir = getOhMyTokensDataDir();
-const dbPath = path.join(dataDir, "oh-my-tokens.db");
-
-let dbSingleton: Database | null = null;
-
-export function getDb(): Database {
+export function getDb(): BunDatabase {
   if (dbSingleton !== null) {
     return dbSingleton;
   }
 
+  const dataDir = getOhMyTokensDataDir();
+  const dbPath = path.join(dataDir, "oh-my-tokens.db");
+
   mkdirSync(dataDir, { recursive: true });
 
-  const db = new DatabaseConstructor(dbPath, {
+  const db = new BunDatabase(dbPath, {
     create: true,
     readwrite: true,
   });
