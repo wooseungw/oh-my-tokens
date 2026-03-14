@@ -134,6 +134,8 @@ describe("paths", () => {
 
   it("findOpencodeConfigPath falls back to global config when not found in cwd", async () => {
     setPlatform("linux");
+    process.env.HOME = "/home/tester";
+    delete process.env.XDG_CONFIG_HOME;
     existsSyncMock.mockReturnValue(false);
 
     const { findOpencodeConfigPath } = await loadPathsModule();
