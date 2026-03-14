@@ -8,9 +8,9 @@
 
 ## Recent Updates
 
+- `test` Add enrichment resolver e2e integration test
 - `test` Add storage migration and rollup e2e integration test
 - `test` Add postinstall migration flow integration test
-- `test` Add unit tests for migrations, sessions, and attribution
 
 ## Preview
 
