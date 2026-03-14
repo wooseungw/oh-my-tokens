@@ -8,9 +8,9 @@
 
 ## Recent Updates
 
+- `fix` Postinstall migration order — run migration check before creating default config file
+- `fix` Enrichment — pass providers config to resolver in manual mode
 - `chore` Release v0.1.18 — alignment fixes, auto-update notification, env var docs
-- `fix` Alignment — separator widths unified, `--` column in limits fixed
-- `feat` Auto-update notification — startup toast when newer version is available on npm
 
 ## Preview
 

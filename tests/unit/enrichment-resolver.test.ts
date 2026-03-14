@@ -79,6 +79,30 @@ describe("resolveEnrichment", () => {
     ]);
   });
 
+  it("manual mode with providers config correctly passes providers to resolver", async () => {
+    const { resolveEnrichment } = await loadResolverModule();
+
+    await expect(
+      resolveEnrichment({
+        mode: "manual",
+        providers: {
+          anthropic: { budget: 500_000, unit: "tokens", period: "monthly" },
+        },
+      }),
+    ).resolves.toEqual([
+      {
+        provider: "anthropic",
+        quota: {
+          provider: "anthropic",
+          used: 0,
+          limit: 500_000,
+          unit: "tokens",
+        },
+        source: "manual",
+      },
+    ]);
+  });
+
   it("fetches quotas in auto mode from available provider tokens", async () => {
     process.env.OPENAI_API_KEY = "openai-test-token";
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
