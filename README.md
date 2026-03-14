@@ -8,9 +8,9 @@
 
 ## Preview
 
-![oh-my-tokens /omt summary](docs/images/omt-preview.png)
+![oh-my-tokens /omt summary](https://raw.githubusercontent.com/wooseungw/oh-my-tokens/main/docs/images/omt-preview.png)
 
-![oh-my-tokens /omt agents](docs/images/omt-agents.png)
+![oh-my-tokens /omt agents](https://raw.githubusercontent.com/wooseungw/oh-my-tokens/main/docs/images/omt-agents.png)
 
 ## Quick Start
 
@@ -120,6 +120,7 @@ Settings live in `oh-my-tokens.json`, created automatically next to your `openco
 | `/omt budget` | Budget status and remaining capacity |
 | `/omt export [json\|csv]` | Export usage data in JSON or CSV format |
 | `/omt status` | Diagnostic info (detected providers, database size, pricing data freshness) |
+| `/omt limits` | Live provider quota windows with reset times |
 | `/omt rebuild` | Rebuild rollup aggregates from events table |
 | `/omt setting` | View all plugin settings from `oh-my-tokens.json` |
 | `/omt setting <key>` | Show valid values and current value for a key |
@@ -236,4 +237,4 @@ MIT — See [LICENSE](./LICENSE) for details.
 
 ---
 
-**Questions?** Open an [issue](https://github.com/seungwoo/oh-my-tokens/issues) or check the [docs](https://github.com/seungwoo/oh-my-tokens/wiki).
+**Questions?** Open an [issue](https://github.com/wooseungw/oh-my-tokens/issues) or check the [docs](https://github.com/wooseungw/oh-my-tokens/tree/main/docs).
