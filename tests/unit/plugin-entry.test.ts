@@ -70,7 +70,7 @@ describe("OhMyTokensPlugin", () => {
       ),
     ).rejects.toThrow("__OH_MY_TOKENS_COMMAND_HANDLED__");
 
-    expect(handleOmtCommandMock).toHaveBeenCalledWith("status", "ses_test");
+    expect(handleOmtCommandMock).toHaveBeenCalledWith("status", "ses_test", expect.any(Function));
     expect(clientPromptMock).toHaveBeenCalledWith({
       path: { id: "ses_test" },
       body: { noReply: true, parts: [{ type: "text", text: "mock omt output", ignored: true }] },
@@ -90,7 +90,7 @@ describe("OhMyTokensPlugin", () => {
       ),
     ).rejects.toThrow("__OH_MY_TOKENS_COMMAND_HANDLED__");
 
-    expect(handleOmtCommandMock).toHaveBeenCalledWith("agents", "ses_sub");
+    expect(handleOmtCommandMock).toHaveBeenCalledWith("agents", "ses_sub", expect.any(Function));
     expect(clientPromptMock).toHaveBeenCalledWith({
       path: { id: "ses_sub" },
       body: { noReply: true, parts: [{ type: "text", text: "mock omt output", ignored: true }] },

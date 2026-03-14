@@ -1,10 +1,15 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, watch } from "node:fs";
+import path from "node:path";
 import type { Plugin } from "@opencode-ai/plugin";
 
 import { type BudgetConfig, setBudgetConfig } from "./analytics/budget";
 import { type ProviderConfig, setProviderConfigs } from "./analytics/plans";
 import { setLiveQuotas } from "./analytics/quota";
-import type { ProviderQuota } from "./enrichment/providers";
+import {
+  getAuthJsonCandidatePaths,
+  type ProviderQuota,
+  readAuthJson,
+} from "./enrichment/providers";
 import { type EnrichmentConfig, normalizeMode, resolveEnrichment } from "./enrichment/resolver";
 import { findOpencodeConfigPath } from "./paths";
 import { createPipelineHooks } from "./pipeline";
@@ -14,6 +19,39 @@ import { handleOmtCommand } from "./ui/commands";
 import { buildSidebarItems, type DisplayMode } from "./ui/sidebar";
 
 let _enrichmentConfig: EnrichmentConfig = { mode: "off" };
+
+const _knownAuthProviders = new Set<string>();
+
+function initKnownAuthProviders(): void {
+  const auth = readAuthJson();
+  if (auth === null) return;
+  for (const key of Object.keys(auth)) {
+    _knownAuthProviders.add(key);
+  }
+}
+
+function setupAuthWatcher(onNewProvider: (provider: string) => void): void {
+  const watchedDirs = [...new Set(getAuthJsonCandidatePaths().map((p) => path.dirname(p)))];
+  let debounce: ReturnType<typeof setTimeout> | null = null;
+  for (const dir of watchedDirs) {
+    if (!existsSync(dir)) continue;
+    watch(dir, { persistent: false }, (_eventType, filename) => {
+      if (filename !== "auth.json") return;
+      if (debounce !== null) clearTimeout(debounce);
+      debounce = setTimeout(() => {
+        debounce = null;
+        const auth = readAuthJson();
+        if (auth === null) return;
+        for (const provider of Object.keys(auth)) {
+          if (!_knownAuthProviders.has(provider)) {
+            _knownAuthProviders.add(provider);
+            onNewProvider(provider);
+          }
+        }
+      }, 200);
+    });
+  }
+}
 
 async function refreshLiveQuotas(): Promise<void> {
   if (_enrichmentConfig.mode === "off") return;
@@ -135,6 +173,32 @@ export const OhMyTokensPlugin: Plugin = async (input) => {
     });
   }
 
+  function applyPluginConfig(): void {
+    const pluginCfg = readPluginConfigFromFile();
+    const providers = pluginCfg?.providers as Record<string, ProviderConfig> | undefined;
+    if (providers !== undefined) setProviderConfigs(providers);
+    extractBudgetConfig(pluginCfg);
+    _enrichmentConfig = { mode: normalizeMode(pluginCfg?.enrichment as string | undefined) };
+    if (_enrichmentConfig.mode !== "off") {
+      refreshLiveQuotas().catch(() => {});
+    }
+  }
+
+  initKnownAuthProviders();
+  setupAuthWatcher((provider) => {
+    input.client.tui
+      .showToast({
+        body: {
+          title: "oh-my-tokens",
+          message: `${provider} connected ✓`,
+          variant: "success",
+          duration: 9000,
+        },
+      })
+      .catch(() => {});
+    refreshLiveQuotas().catch(() => {});
+  });
+
   runBackfill().catch(() => {});
   const hooks = createPipelineHooks(input);
 
@@ -143,14 +207,7 @@ export const OhMyTokensPlugin: Plugin = async (input) => {
     config: async (config) => {
       config.command ??= {};
       Object.assign(config.command, OMT_COMMANDS);
-      const pluginCfg = readPluginConfigFromFile();
-      const providers = pluginCfg?.providers as Record<string, ProviderConfig> | undefined;
-      if (providers !== undefined) setProviderConfigs(providers);
-      extractBudgetConfig(pluginCfg);
-      _enrichmentConfig = { mode: normalizeMode(pluginCfg?.enrichment as string | undefined) };
-      if (_enrichmentConfig.mode !== "off") {
-        refreshLiveQuotas().catch(() => {});
-      }
+      applyPluginConfig();
     },
     "command.execute.before": async (commandInput, _output) => {
       const fixedArgs = COMMAND_ARGS[commandInput.command];
@@ -164,7 +221,7 @@ export const OhMyTokensPlugin: Plugin = async (input) => {
       } else {
         args = fixedArgs;
       }
-      const result = handleOmtCommand(args, commandInput.sessionID);
+      const result = handleOmtCommand(args, commandInput.sessionID, applyPluginConfig);
       await injectRawOutput(commandInput.sessionID, result.text);
       handled();
     },

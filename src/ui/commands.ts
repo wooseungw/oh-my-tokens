@@ -878,7 +878,7 @@ function applySettingChange(
   }
 }
 
-function buildSettingCommandOutput(rawTail: string): string {
+function buildSettingCommandOutput(rawTail: string, onSettingApplied?: () => void): string {
   const configPath = findOpencodeConfigPath();
   if (rawTail.trim() === "") {
     return buildSettingDisplay(configPath);
@@ -899,17 +899,25 @@ function buildSettingCommandOutput(rawTail: string): string {
   if (!result.ok) {
     return ["oh-my-tokens — Settings", SECTION_RULE, `✗ ${result.error}`].join("\n");
   }
-  return [
+  onSettingApplied?.();
+  const lines = [
     "oh-my-tokens — Settings",
     SECTION_RULE,
     `✓ ${key} = ${String(value)}`,
     `Config   ${configPath}`,
-    "Restart OpenCode to apply changes.",
-    SECTION_RULE,
-  ].join("\n");
+  ];
+  if (onSettingApplied === undefined) {
+    lines.push("Restart OpenCode to apply changes.");
+  }
+  lines.push(SECTION_RULE);
+  return lines.join("\n");
 }
 
-function buildCommandText(command: ParsedCommand, sessionID: string): string {
+function buildCommandText(
+  command: ParsedCommand,
+  sessionID: string,
+  onSettingApplied?: () => void,
+): string {
   switch (command.subcommand) {
     case "agents":
       return buildAgentSummary(getTodayRollups());
@@ -928,13 +936,17 @@ function buildCommandText(command: ParsedCommand, sessionID: string): string {
     case "limits":
       return buildLimitsSummary();
     case "setting":
-      return buildSettingCommandOutput(command.rawTail);
+      return buildSettingCommandOutput(command.rawTail, onSettingApplied);
     default:
       return buildTodaySummary(getTodayRollups());
   }
 }
 
-export function handleOmtCommand(args: string, sessionID: string): { type: "text"; text: string } {
-  const text = buildCommandText(parseCommand(args), sessionID);
+export function handleOmtCommand(
+  args: string,
+  sessionID: string,
+  onSettingApplied?: () => void,
+): { type: "text"; text: string } {
+  const text = buildCommandText(parseCommand(args), sessionID, onSettingApplied);
   return createCommandTextPart(text);
 }

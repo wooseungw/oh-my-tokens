@@ -38,13 +38,16 @@ interface AuthEntry {
   key?: string;
 }
 
-export function readAuthJson(): Record<string, AuthEntry> | null {
-  const candidates = [
+export function getAuthJsonCandidatePaths(): string[] {
+  return [
     path.join(homedir(), ".local", "share", "opencode", "auth.json"),
     path.join(homedir(), ".config", "opencode", "auth.json"),
     path.join(homedir(), "Library", "Application Support", "opencode", "auth.json"),
   ];
-  for (const p of candidates) {
+}
+
+export function readAuthJson(): Record<string, AuthEntry> | null {
+  for (const p of getAuthJsonCandidatePaths()) {
     if (existsSync(p)) {
       try {
         return JSON.parse(readFileSync(p, "utf-8")) as Record<string, AuthEntry>;
