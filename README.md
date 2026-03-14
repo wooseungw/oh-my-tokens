@@ -18,12 +18,8 @@
    ```bash
    npm install oh-my-tokens
    ```
-2. **Add** to your `opencode.json`:
-   ```json
-   { "plugin": ["oh-my-tokens"] }
-   ```
-3. **Restart** OpenCode — the plugin auto-configures enrichment, timezone, and creates `oh-my-tokens.json` next to your `opencode.json`.
-4. **Type `/omt`** in any chat session to see today's token summary with live provider quotas.
+2. **Restart** OpenCode — postinstall automatically registers the plugin in `opencode.json`, detects your timezone, and creates `oh-my-tokens.json` next to your `opencode.json`.
+3. **Type `/omt`** in any chat session to see today's token summary with live provider quotas.
 
 Use `/omt agents` to see per-agent breakdowns, `/omt trend` for 7-day charts, or `/omt limits` to check provider quota windows directly.
 
@@ -32,7 +28,7 @@ Use `/omt agents` to see per-agent breakdowns, `/omt trend` for 7-day charts, or
 - **Provider Tracking** — Separate token usage by provider (Anthropic, OpenAI, Copilot, etc.)
 - **Agent Attribution** — Track which agent executed the request and which initiated it (execution vs. initiator)
 - **Token Classification** — Classify tokens by type: think, chat, code, input, cache
-- **Slash Commands** — `/omt`, `/omt agents`, `/omt trend`, `/omt budget`, `/omt export`, `/omt status`, `/omt rebuild`
+- **Slash Commands** — `/omt`, `/omt agents`, `/omt trend`, `/omt budget`, `/omt limits`, `/omt export`, `/omt status`, `/omt rebuild`
 - **Budget Management** — Daily, weekly, monthly token budgets with alerts
 - **Trend Analysis** — 7-day trends, week-over-week changes, spike detection
 - **Enrichment Modes** — Optional provider quota integration (auto, manual, opencode-quota)
@@ -59,19 +55,24 @@ Use `/omt agents` to see per-agent breakdowns, `/omt trend` for 7-day charts, or
 npm install oh-my-tokens
 ```
 
-Add to `opencode.json`:
-
-```json
-{
-  "plugin": ["oh-my-tokens"]
-}
-```
-
-The plugin auto-configures on install via postinstall — creates `oh-my-tokens.json` with enrichment and timezone defaults.
+That's it. Postinstall automatically:
+- Registers `oh-my-tokens` in your `opencode.json`
+- Creates `oh-my-tokens.json` next to it with enrichment and timezone defaults
 
 ## Configuration
 
-Settings live in `oh-my-tokens.json`, created automatically next to your `opencode.json`:
+Settings live in `oh-my-tokens.json`, created automatically next to your `opencode.json`. On first install, postinstall writes a minimal config:
+
+```jsonc
+{
+  "enrichment": "auto",
+  "budget": {
+    "timezone": "Asia/Seoul"  // auto-detected from your system
+  }
+}
+```
+
+You can extend it with any of the following options:
 
 ```jsonc
 {
@@ -203,14 +204,13 @@ Changes take effect after restarting OpenCode.
 ```bash
 npm install              # Install dependencies
 npm run build            # Compile TypeScript
-npm run typecheck        # Type check only
-npm test                 # Run tests
+npm run typecheck        # Type check only (tsc --noEmit)
+npm test                 # Run tests (vitest)
 npm run test:watch       # Watch mode
 npm run test:coverage    # Coverage report
-npm run format           # Format code (Biome)
-npm run lint             # Lint code (Biome)
-npm run check            # Format + lint (no fixes)
-npm run check:ci         # CI lint mode
+npm run format           # Auto-format with Biome
+npm run lint             # Lint with Biome (no fixes)
+npm run check            # Format + lint check (no fixes) — matches CI
 ```
 
 ### Pre-commit Hooks
