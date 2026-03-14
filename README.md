@@ -8,9 +8,9 @@
 
 ## Recent Updates
 
+- `fix` Recorder — update rollup on reasoning/cache changes, not only inp+out
+- `fix` Windows auth paths — add APPDATA and LOCALAPPDATA support for auth.json discovery
 - `fix` Sidebar budget from config — read daily budget from config store instead of env vars
-- `test` Coverage thresholds — add v8 coverage reporters and baseline measurement to vitest config
-- `fix` Postinstall migration order — run migration check before creating default config file
 
 ## Preview
 

@@ -16,11 +16,20 @@ function isTokenExpired(entry: AuthEntry): boolean {
 }
 
 export function getAuthJsonCandidatePaths(): string[] {
-  return [
+  const paths = [
     join(homedir(), ".local", "share", "opencode", "auth.json"),
     join(homedir(), ".config", "opencode", "auth.json"),
     join(homedir(), "Library", "Application Support", "opencode", "auth.json"),
   ];
+
+  // Windows paths — only add if env vars are set
+  const appData = process.env.APPDATA;
+  if (appData) paths.push(join(appData, "opencode", "auth.json"));
+
+  const localAppData = process.env.LOCALAPPDATA;
+  if (localAppData) paths.push(join(localAppData, "opencode", "auth.json"));
+
+  return paths;
 }
 
 export function readAuthJson(): Record<string, AuthEntry> | null {
