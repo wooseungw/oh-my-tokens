@@ -9,6 +9,9 @@ export default defineConfig({
       provider: "v8",
       include: ["src/**/*.ts"],
       exclude: ["src/index.ts", "src/bun-sqlite.d.ts"],
+      reporter: ["text", "lcov"],
+      // TODO: Uncomment after T18-T20 add missing module tests
+      // thresholds: { lines: 80, functions: 80, branches: 70 },
     },
   },
 });
