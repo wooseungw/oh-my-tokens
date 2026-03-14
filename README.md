@@ -8,9 +8,57 @@
 
 ## Preview
 
-![oh-my-tokens /omt summary](https://raw.githubusercontent.com/wooseungw/oh-my-tokens/main/docs/images/omt-preview.png)
+**`/omt`** — Today's summary with live provider quotas and budget status:
 
-![oh-my-tokens /omt agents](https://raw.githubusercontent.com/wooseungw/oh-my-tokens/main/docs/images/omt-agents.png)
+```
+oh-my-tokens — Today's Summary
+─── anthropic ─── 19.5M today ──────────
+  ⏱ 5h    ████░░░░░░░░░░░░   8%  resets 37m  [live]
+  🗓 7d    ██░░░░░░░░░░░░░░   5%              [live]
+─── openai ──────────────────────────────
+  ⏱ 1h    ░░░░░░░░░░░░░░░░   0%  resets 4h 59m  [live]
+  📆 wk   ██████░░░░░░░░░░  37%              [live]
+─── Today ───────────────────────────────
+  anthropic  ████████████████  99%   19.5M tok
+  google     ░░░░░░░░░░░░░░░░   1%  319.0K tok
+  copilot    ░░░░░░░░░░░░░░░░   0%  315.0K tok
+─── Breakdown ───────────────────────────
+  🧠 think    0 ( 0%)   💬 chat  37.2K ( 1%)
+  ⌨️ code     0 ( 0%)   📥 input    95 ( 0%)
+  📦 cache  13.1M (99%)   Σ total  13.2M
+─── Budget ─────────────────────────────
+  daily    ████░░░░░░░░░░░░  28%    13.2M /    50.0M  ✓
+  pace     3.1M tok/h allowed  ·  9.8 req/h  (47 req today)
+```
+
+**`/omt agents`** — Per-agent token breakdown:
+
+```
+oh-my-tokens — Agent Usage
+═══════════════════════════════════════
+AGENTS
+  Coder        ████████████░░░░  76%    9.8M tok
+  Orchestrator ████░░░░░░░░░░░░  24%    3.2M tok
+═══════════════════════════════════════
+```
+
+**`/omt trend`** — 7-day usage chart with week-over-week change:
+
+```
+oh-my-tokens — 7-Day Trend
+═══════════════════════════════════════
+DAILY USAGE
+  2026-03-08  ████░░░░░░░░   2.1M
+  2026-03-09  ██░░░░░░░░░░   1.3M
+  2026-03-10  ░░░░░░░░░░░░      0
+  2026-03-11  ████████░░░░   4.2M
+  2026-03-12  ████████████   6.1M
+  2026-03-13  ██████░░░░░░   3.4M
+  2026-03-14  ████░░░░░░░░   2.2M
+═══════════════════════════════════════
+WoW  +18.2% (this week vs last week)
+⚠️ Spike: 2026-03-12 (Z=2.3)
+```
 
 ## Quick Start
 
@@ -126,29 +174,6 @@ You can extend it with any of the following options:
 | `/omt setting` | View all plugin settings from `oh-my-tokens.json` |
 | `/omt setting <key>` | Show valid values and current value for a key |
 | `/omt setting <key> <value>` | Update a setting (validated; shows preview for `display`) |
-
-### Output Example (`/omt`)
-
-```
-oh-my-tokens — Today's Summary
-─── anthropic ─── 19.5M today ──────────
-  ⏱ 5h    ████░░░░░░░░░░░░   8%  resets 37m  [live]
-  🗓 7d    ██░░░░░░░░░░░░░░   5%              [live]
-─── openai ──────────────────────────────
-  ⏱ 1h    ░░░░░░░░░░░░░░░░   0%  resets 4h 59m  [live]
-  📆 wk   ██████░░░░░░░░░░  37%              [live]
-─── Today ───────────────────────────────
-  anthropic  ████████████████  99%   19.5M tok
-  google     ░░░░░░░░░░░░░░░░   1%  319.0K tok
-  copilot    ░░░░░░░░░░░░░░░░   0%  315.0K tok
-─── Breakdown ───────────────────────────
-  🧠 think    0 ( 0%)   💬 chat  37.2K ( 1%)
-  ⌨️ code     0 ( 0%)   📥 input    95 ( 0%)
-  📦 cache  13.1M (99%)   Σ total  13.2M
-─── Budget ──────────────────────────────
-  daily    ████░░░░░░░░░░░░  28%    13.2M /    50.0M  ✓
-  pace     3.1M tok/h allowed  ·  9.8 req/h  (47 req today)
-```
 
 All command output is non-intrusive (`noReply: true`, `ignored: true`).
 
