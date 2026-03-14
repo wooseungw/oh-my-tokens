@@ -81,4 +81,96 @@ If any check fails, the commit is blocked. Fix the issues and try again.
 - Review the [INFRA.md](./INFRA.md) for detailed infrastructure documentation
 - Open an issue with the "question" label if needed
 
+## Source Architecture
+
+The `src/` directory is organized by concern. Each module has a single responsibility.
+
+```
+src/
+├── index.ts              — Plugin entry point (OhMyTokensPlugin, getSidebarItems export)
+├── pipeline.ts           — OpenCode hook handlers (message.updated, session.idle, compacted)
+├── paths.ts              — Data directory path resolution (OS-specific XDG/AppData)
+├── utils.ts              — Date formatting utilities
+│
+├── analytics/
+│   ├── aggregator.ts     — Converts rollup rows to AggregatedUsage objects
+│   ├── budget.ts         — Budget config and checking (setBudgetConfig, checkBudget)
+│   ├── plans.ts          — Provider plan definitions and per-provider limit management
+│   ├── pricing.ts        — Token cost pricing table and cost calculation
+│   ├── quota.ts          — Live quota state management (setLiveQuotas, getLiveQuota)
+│   ├── token-math.ts     — Shared computeTotalTokens helper and TokenRow interface
+│   └── trends.ts         — 7-day trend analysis
+│
+├── config/
+│   └── reader.ts         — Pure config reading: readPluginConfigFromFile, extractBudgetConfig
+│
+├── enrichment/
+│   ├── auth.ts           — Auth credential helpers: readAuthToken, readAuthJson, getAuthJsonCandidatePaths
+│   ├── auth-watcher.ts   — Watches auth.json for new providers (initKnownAuthProviders, setupAuthWatcher)
+│   ├── cache.ts          — Generic TTL cache for enrichment data (5-min TTL)
+│   ├── fetch-utils.ts    — safeFetch, isRecord, readFiniteNumber, parseUsageBody
+│   ├── providers.ts      — ENRICHMENT_PROVIDERS registry and ProviderQuota interfaces
+│   └── resolver.ts       — Enrichment mode resolution and provider auto-detection
+│
+├── storage/
+│   ├── backfill.ts       — Rebuilds rollups from raw events on first install
+│   ├── db.ts             — SQLite initialization, execute/query helpers
+│   ├── migrations.ts     — Schema migration runner
+│   ├── rollup.ts         — Rollup aggregation queries (SUM_TOKEN_COLUMNS constant)
+│   └── sessions.ts       — Session tracking and session ancestry graph
+│
+├── tracking/
+│   ├── attribution.ts    — Resolves agent and initiator from session ancestry
+│   ├── classifier.ts     — Token type classification (think / chat / code)
+│   ├── config-hash.ts    — Config change detection for budget re-evaluation
+│   ├── normalizer.ts     — Normalizes raw OpenCode events to token counts
+│   └── recorder.ts       — Records events to SQLite (upsertEvent, upsertRollup)
+│
+└── ui/
+    ├── commands/
+    │   ├── index.ts      — handleOmtCommand router (single export entry point for all /omt subcommands)
+    │   ├── agents.ts     — buildAgentSummary (/omt agents)
+    │   ├── budget-cmd.ts — buildBudgetSummary (/omt budget)
+    │   ├── limits.ts     — buildLimitsSummary (/omt limits)
+    │   ├── misc.ts       — buildStatusOutput, buildExportOutput, handleOmtRebuild
+    │   ├── setting.ts    — SETTING_SPECS, applyOhMyTokensSetting, buildSettingCommandOutput
+    │   ├── today.ts      — buildTodaySummary, getDailyBudget, getPeriodBudget (/omt default)
+    │   └── trend.ts      — buildTrendSummary (/omt trend)
+    ├── formatter.ts      — formatTokens (human-readable token count formatting)
+    ├── render.ts         — Shared render primitives: buildBar, formatUsageLine, SECTION_RULE
+    ├── sidebar.ts        — getSidebarItems (sidebar panel)
+    └── toast.ts          — Toast notification rendering
+```
+
+**Key invariants to keep in mind when contributing:**
+- `src/analytics/aggregator.ts` has `AggregatedUsage.totalTokens` as a **field** (not a function). Do not confuse with `computeTotalTokens()` in `token-math.ts`.
+- `handleOmtCommand` signature is fixed: `(args: string, sessionID: string, applyConfig?: () => void) => { text: string }`
+- `applyOhMyTokensSetting` returns `{ ok: boolean, error?: string }` — not `{ success }`
+- Zero runtime npm dependencies — `dependencies: {}` in `package.json` must stay empty
+
+## Documentation Policy
+
+**Every code change that affects user-facing behavior or internal architecture must include a documentation update in the same PR.**
+
+### What requires a docs update
+
+| Change type | What to update |
+|-------------|----------------|
+| New or changed `/omt` command | `docs/commands.md` |
+| New or changed config key | `docs/configuration.md` |
+| New or changed provider support | `docs/providers.md` |
+| New source file or module | `CONTRIBUTING.md` — Source Architecture section |
+| Deleted or renamed source file/module | `CONTRIBUTING.md` — Source Architecture section |
+| User-facing behavior change | `README.md` |
+| New invariant or constraint | `CONTRIBUTING.md` — Key invariants section |
+
+### What does NOT require a docs update
+- Internal refactoring with no external behavior change
+- Test additions
+- Dependency version bumps (Dependabot)
+- CI/infra changes (update `INFRA.md` if needed, not these docs)
+
+### PR checklist
+The `.github/pull_request_template.md` contains documentation checkboxes. Reviewers **must** verify these before approving.
+
 Happy coding! 🚀
