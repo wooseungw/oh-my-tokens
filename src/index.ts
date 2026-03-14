@@ -12,6 +12,7 @@ import { createPipelineHooks } from "./pipeline";
 import { runBackfill } from "./storage/backfill";
 import { setWeeklyResetDay } from "./storage/rollup";
 import { handleOmtCommand } from "./ui/commands/index";
+import { checkForUpdate } from "./update-check";
 
 export { buildSidebarItems as getSidebarItems } from "./ui/sidebar";
 
@@ -98,6 +99,19 @@ export const OhMyTokensPlugin: Plugin = async (input) => {
     refreshLiveQuotas().catch(() => {});
   });
   runBackfill().catch(() => {});
+  checkForUpdate()
+    .then((update) => {
+      if (update === null) return;
+      return input.client.tui.showToast({
+        body: {
+          title: "oh-my-tokens — Update Available",
+          message: `v${update.latestVersion} is available  (you have v${update.currentVersion})\nnpm install oh-my-tokens@latest`,
+          variant: "info",
+          duration: 15000,
+        },
+      });
+    })
+    .catch(() => {});
   const hooks = createPipelineHooks(input);
 
   return {
