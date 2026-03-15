@@ -2,6 +2,7 @@ import { checkBudget, getBudgetConfig } from "../../analytics/budget";
 
 import { formatTokens } from "../formatter";
 import { buildBar, buildSectionRule, maxContentWidth } from "../render";
+import type { DisplayMode } from "../sidebar";
 
 function getDailyBudget(): number | null {
   const cfg = getBudgetConfig();
@@ -25,7 +26,8 @@ function getPeriodBudget(period: "daily" | "weekly" | "monthly"): number | null 
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
-export function buildBudgetSummary(textMode = false): string {
+export function buildBudgetSummary(mode: DisplayMode = "normal"): string {
+  const textMode = mode === "text";
   const config = {
     daily: getDailyBudget() ?? undefined,
     weekly: getPeriodBudget("weekly") ?? undefined,

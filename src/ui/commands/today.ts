@@ -18,6 +18,7 @@ import {
   QUOTA_PREFIX_WIDTH,
   visualWidth,
 } from "../render";
+import type { DisplayMode } from "../sidebar";
 
 interface UsageTotals {
   inp: number;
@@ -221,7 +222,8 @@ function buildBudgetContentLines(total: number, todayRequests: number, textMode 
   return lines;
 }
 
-export function buildTodaySummary(rows: RollupRow[], textMode = false): string {
+export function buildTodaySummary(rows: RollupRow[], mode: DisplayMode = "normal"): string {
+  const textMode = mode === "text";
   const todayTotal = findTodayTotal(rows);
   const total = computeTotalTokens(todayTotal);
   const cacheTotal = todayTotal.cache_r + todayTotal.cache_w;
@@ -278,28 +280,51 @@ export function buildTodaySummary(rows: RollupRow[], textMode = false): string {
   ];
   const budgetLines = buildBudgetContentLines(total, todayRequests, textMode);
 
-  const allContent = [
-    title,
-    ...providerBlocks.flatMap((b) => b.contentLines),
-    ...usageLines,
-    ...breakdownLines,
-    ...budgetLines,
-  ];
+  const output: string[] = [title];
+
+  if (usageLines.length > 0) {
+    output.push("__TODAY_DIVIDER__", ...usageLines);
+  }
+  if (mode === "compact") {
+    output.push(`  Σ total  ${formatTokens(total)}`);
+  } else {
+    for (const block of providerBlocks) {
+      output.push(`__PROVIDER_HEADER__${block.name}\u0000${block.tokLabel ?? ""}`);
+      output.push(...block.contentLines);
+    }
+    output.push("__BREAKDOWN_DIVIDER__", ...breakdownLines);
+    if (mode !== "normal" && budgetLines.length > 0) {
+      output.push("__BUDGET_DIVIDER__", ...budgetLines);
+    }
+  }
+
+  const allContent = output.flatMap((line) => {
+    if (line === "__TODAY_DIVIDER__") return ["Today"];
+    if (line === "__BREAKDOWN_DIVIDER__") return ["Breakdown"];
+    if (line === "__BUDGET_DIVIDER__") return ["Budget"];
+    if (line.startsWith("__PROVIDER_HEADER__")) {
+      const [name, tokLabel] = line.slice("__PROVIDER_HEADER__".length).split("\u0000");
+      return [`${name}${tokLabel.length > 0 ? ` ${tokLabel}` : ""}`];
+    }
+    return [line];
+  });
   const width = maxContentWidth(...allContent);
 
-  const output: string[] = [title];
-  for (const block of providerBlocks) {
-    output.push(buildProviderSectionHeader(block.name, block.tokLabel, width));
-    output.push(...block.contentLines);
-  }
-  if (usageLines.length > 0) {
-    output.push(buildSectionDivider("Today", width), ...usageLines);
-  }
-  output.push(buildSectionDivider("Breakdown", width), ...breakdownLines);
-  if (budgetLines.length > 0) {
-    output.push(buildSectionDivider("Budget", width), ...budgetLines);
+  const rendered = output.map((line) => {
+    if (line === "__TODAY_DIVIDER__") return buildSectionDivider("Today", width);
+    if (line === "__BREAKDOWN_DIVIDER__") return buildSectionDivider("Breakdown", width);
+    if (line === "__BUDGET_DIVIDER__") return buildSectionDivider("Budget", width);
+    if (line.startsWith("__PROVIDER_HEADER__")) {
+      const [name, tokLabel] = line.slice("__PROVIDER_HEADER__".length).split("\u0000");
+      return buildProviderSectionHeader(name, tokLabel.length > 0 ? tokLabel : undefined, width);
+    }
+    return line;
+  });
+
+  if (rendered.length === 1) {
+    rendered.push(buildSectionDivider("Today", width));
   }
 
-  const summaryText = createCommandTextPart(output.join("\n")).text;
+  const summaryText = createCommandTextPart(rendered.join("\n")).text;
   return alert !== null ? `${alert}\n\n${summaryText}` : summaryText;
 }

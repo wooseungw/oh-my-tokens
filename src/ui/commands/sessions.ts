@@ -2,11 +2,12 @@ import { computeTotalTokens } from "../../analytics/token-math";
 import { getTopSessions } from "../../storage/rollup";
 import { formatTokens } from "../formatter";
 import { buildSectionRule, LABEL_AREA_MIN, maxContentWidth, visualWidth } from "../render";
+import type { DisplayMode } from "../sidebar";
 
 const SESSIONS_TITLE = "oh-my-tokens — Top Sessions";
 
-export function buildSessionsSummary(): string {
-  const sessions = getTopSessions(7, 15);
+export function buildSessionsSummary(mode: DisplayMode = "normal"): string {
+  const sessions = getTopSessions(7, mode === "compact" ? 5 : 15);
   const emptyRule = buildSectionRule();
 
   if (sessions.length === 0) {

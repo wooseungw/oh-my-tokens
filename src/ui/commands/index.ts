@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 
 import { findOhMyTokensConfigPath, findOpencodeConfigPath } from "../../paths";
 import { getTodayRollups } from "../../storage/rollup";
+import type { DisplayMode } from "../sidebar";
 
 import { buildAgentSummary } from "./agents";
 import { buildBudgetSummary } from "./budget-cmd";
@@ -41,17 +42,20 @@ function buildCommandText(
     } catch {}
   }
 
-  const textMode = display === "text";
+  const mode: DisplayMode =
+    display === "compact" || display === "normal" || display === "extend" || display === "text"
+      ? display
+      : "normal";
 
   switch (command.subcommand) {
     case "agents":
-      return buildAgentSummary(getTodayRollups(), textMode);
+      return buildAgentSummary(getTodayRollups(), mode);
     case "models":
-      return buildModelsSummary(textMode);
+      return buildModelsSummary(mode);
     case "trend":
-      return buildTrendSummary();
+      return buildTrendSummary(mode);
     case "budget":
-      return buildBudgetSummary(textMode);
+      return buildBudgetSummary(mode);
     case "export":
       return buildExportOutput(command.args[0] === "csv" ? "csv" : "json");
     case "status":
@@ -59,15 +63,15 @@ function buildCommandText(
     case "rebuild":
       return handleOmtRebuild();
     case "limits":
-      return buildLimitsSummary(textMode);
+      return buildLimitsSummary(mode);
     case "sessions":
-      return buildSessionsSummary();
+      return buildSessionsSummary(mode);
     case "hours":
-      return buildHoursSummary();
+      return buildHoursSummary(mode);
     case "setting":
       return buildSettingCommandOutput(command.rawTail, applyConfig);
     default:
-      return buildTodaySummary(getTodayRollups(), textMode);
+      return buildTodaySummary(getTodayRollups(), mode);
   }
 }
 

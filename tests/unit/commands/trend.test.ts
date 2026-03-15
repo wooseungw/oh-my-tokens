@@ -22,12 +22,12 @@ describe("buildTrendSummary", () => {
   });
 
   it("should return a string", () => {
-    const result = buildTrendSummary();
+    const result = buildTrendSummary("extend");
     expect(typeof result).toBe("string");
   });
 
   it("includes TOKEN MIX section", () => {
-    const result = buildTrendSummary();
+    const result = buildTrendSummary("extend");
 
     expect(result).toContain("TOKEN MIX");
   });
@@ -49,7 +49,7 @@ describe("buildTrendSummary", () => {
       },
     ]);
 
-    const result = buildTrendSummary();
+    const result = buildTrendSummary("extend");
 
     expect(result).toContain("  2026-03-14  🧠 45%  💬 30%  ⌨️ 25%");
     expect(result).toContain("  2026-03-13  🧠   —  💬   —  ⌨️   —");
@@ -68,7 +68,7 @@ describe("buildTrendSummary", () => {
     ]);
     vi.mocked(trends.getDailyCosts).mockReturnValue(costByDate);
 
-    buildTrendSummary();
+    buildTrendSummary("extend");
 
     expect(trends.getDailyCosts).toHaveBeenCalledWith(2);
     expect(trends.formatTrendChart).toHaveBeenCalledWith(
@@ -78,5 +78,42 @@ describe("buildTrendSummary", () => {
       ],
       costByDate,
     );
+  });
+
+  it("shows only chart in compact mode", async () => {
+    const trends = await import("../../../src/analytics/trends");
+    vi.mocked(trends.formatTrendChart).mockReturnValue("chart");
+    vi.mocked(trends.getWowChange).mockReturnValue({ current: 10, previous: 9, changePercent: 10 });
+    vi.mocked(trends.detectSpikes).mockReturnValue([
+      { date: "2026-03-14", total: 1_000, zScore: 2.3 },
+    ]);
+    vi.mocked(trends.getTaskTypeTrend).mockReturnValue([
+      { date: "2026-03-14", thinkPct: 45, chatPct: 30, codePct: 25 },
+    ]);
+
+    const result = buildTrendSummary("compact");
+
+    expect(result).toContain("DAILY USAGE");
+    expect(result).not.toContain("TOKEN MIX");
+    expect(result).not.toContain("WoW");
+    expect(result).not.toContain("Spike");
+  });
+
+  it("shows wow details without token mix in normal mode", async () => {
+    const trends = await import("../../../src/analytics/trends");
+    vi.mocked(trends.formatTrendChart).mockReturnValue("chart");
+    vi.mocked(trends.getWowChange).mockReturnValue({ current: 10, previous: 9, changePercent: 10 });
+    vi.mocked(trends.detectSpikes).mockReturnValue([
+      { date: "2026-03-14", total: 1_000, zScore: 2.3 },
+    ]);
+    vi.mocked(trends.getTaskTypeTrend).mockReturnValue([
+      { date: "2026-03-14", thinkPct: 45, chatPct: 30, codePct: 25 },
+    ]);
+
+    const result = buildTrendSummary("normal");
+
+    expect(result).toContain("WoW  +10.0%");
+    expect(result).toContain("⚠️ Spike: 2026-03-14 (Z=2.3)");
+    expect(result).not.toContain("TOKEN MIX");
   });
 });

@@ -9,16 +9,20 @@ import {
   maxContentWidth,
   visualWidth,
 } from "../render";
+import type { DisplayMode } from "../sidebar";
 
 function getAgentCountLabel(row: RollupRow): string {
   return row.count > 1 ? `${row.name} ×${row.count}` : row.name;
 }
 
-export function buildAgentSummary(rows: RollupRow[], textMode = false): string {
+export function buildAgentSummary(rows: RollupRow[], mode: DisplayMode = "normal"): string {
+  const textMode = mode === "text";
   const costMode = getUnitSetting() === "cost";
+  const limit = mode === "compact" ? 3 : Number.POSITIVE_INFINITY;
   const agents = rows
     .filter((row) => row.kind === "agent")
-    .sort((left, right) => computeTotalTokens(right) - computeTotalTokens(left));
+    .sort((left, right) => computeTotalTokens(right) - computeTotalTokens(left))
+    .slice(0, limit);
   const total = agents.reduce((sum, row) => sum + computeTotalTokens(row), 0);
   const labelWidth = Math.max(
     LABEL_AREA_MIN,

@@ -12,7 +12,7 @@ describe("buildSessionsSummary", () => {
   it("shows empty state when no sessions", () => {
     vi.mocked(getTopSessions).mockReturnValue([]);
 
-    const result = buildSessionsSummary();
+    const result = buildSessionsSummary("normal");
 
     expect(result).toContain("No sessions recorded.");
   });
@@ -34,7 +34,7 @@ describe("buildSessionsSummary", () => {
       },
     ]);
 
-    const result = buildSessionsSummary();
+    const result = buildSessionsSummary("normal");
 
     expect(result).toContain("abcdef12");
     expect(result).toContain("2026-03-14");
@@ -44,8 +44,16 @@ describe("buildSessionsSummary", () => {
   it("shows header", () => {
     vi.mocked(getTopSessions).mockReturnValue([]);
 
-    const result = buildSessionsSummary();
+    const result = buildSessionsSummary("normal");
 
     expect(result).toContain("oh-my-tokens — Top Sessions");
+  });
+
+  it("uses top 5 in compact mode", () => {
+    vi.mocked(getTopSessions).mockReturnValue([]);
+
+    buildSessionsSummary("compact");
+
+    expect(getTopSessions).toHaveBeenCalledWith(7, 5);
   });
 });

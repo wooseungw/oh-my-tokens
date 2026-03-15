@@ -27,7 +27,7 @@ describe("buildModelsSummary", () => {
   it("shows empty state when no models", () => {
     vi.mocked(getModelRollups).mockReturnValue([]);
 
-    const result = buildModelsSummary();
+    const result = buildModelsSummary("normal");
 
     expect(result).toContain("No model data recorded.");
   });
@@ -38,7 +38,7 @@ describe("buildModelsSummary", () => {
       makeRow("gpt-4o", 2000, 500),
     ]);
 
-    const result = buildModelsSummary();
+    const result = buildModelsSummary("normal");
 
     expect(result).toContain("claude-sonnet-4");
     expect(result).toContain("gpt-4o");
@@ -47,7 +47,7 @@ describe("buildModelsSummary", () => {
   it("shows header", () => {
     vi.mocked(getModelRollups).mockReturnValue([]);
 
-    const result = buildModelsSummary();
+    const result = buildModelsSummary("normal");
 
     expect(result).toContain("oh-my-tokens — Model Usage");
   });
@@ -55,8 +55,24 @@ describe("buildModelsSummary", () => {
   it("handles (unknown) model name", () => {
     vi.mocked(getModelRollups).mockReturnValue([makeRow("(unknown)", 1000, 200)]);
 
-    const result = buildModelsSummary();
+    const result = buildModelsSummary("normal");
 
     expect(result).toContain("(unknown)");
+  });
+
+  it("shows only top 3 models in compact mode", () => {
+    vi.mocked(getModelRollups).mockReturnValue([
+      makeRow("model-a", 5, 0),
+      makeRow("model-b", 4, 0),
+      makeRow("model-c", 3, 0),
+      makeRow("model-d", 2, 0),
+    ]);
+
+    const result = buildModelsSummary("compact");
+
+    expect(result).toContain("model-a");
+    expect(result).toContain("model-b");
+    expect(result).toContain("model-c");
+    expect(result).not.toContain("model-d");
   });
 });

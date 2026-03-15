@@ -9,8 +9,9 @@ import {
 import { getUnitSetting } from "../../config/reader";
 
 import { buildSectionRule, maxContentWidth } from "../render";
+import type { DisplayMode } from "../sidebar";
 
-export function buildTrendSummary(): string {
+export function buildTrendSummary(mode: DisplayMode = "normal"): string {
   const points = getDailyTrend();
   const costByDate = getUnitSetting() === "cost" ? getDailyCosts(points.length) : undefined;
   const wow = getWowChange();
@@ -29,18 +30,16 @@ export function buildTrendSummary(): string {
   const title = "oh-my-tokens — 7-Day Trend";
   const chart = formatTrendChart(points, costByDate);
   const spikeLines = spikes.map((spike) => `⚠️ Spike: ${spike.date} (Z=${spike.zScore.toFixed(1)})`);
-  const width = maxContentWidth(title, chart, ...mixLines, wowLabel, ...spikeLines);
+  const detailLines = [wowLabel, ...spikeLines];
+  const showMix = mode === "extend" || mode === "text";
+  const width = maxContentWidth(title, chart, ...(showMix ? mixLines : []), ...detailLines);
   const rule = buildSectionRule(width);
-  return [
-    title,
-    rule,
-    "DAILY USAGE",
-    chart,
-    rule,
-    "TOKEN MIX",
-    ...mixLines,
-    rule,
-    wowLabel,
-    ...spikeLines,
-  ].join("\n");
+  const lines = [title, rule, "DAILY USAGE", chart];
+  if (showMix) {
+    lines.push(rule, "TOKEN MIX", ...mixLines);
+  }
+  if (mode !== "compact") {
+    lines.push(rule, ...detailLines);
+  }
+  return lines.join("\n");
 }

@@ -9,9 +9,9 @@
 
 ## Recent Updates
 
+- `feat` Display mode affects slash commands: compact/normal/extend show different detail levels
 - `fix` Separator width explosion on multi-line content (trend 300+→46 chars)
 - `fix` Remove dead settings (lang), wire toast.durationMs and retention to config
-- `fix` Toast: correct total to think+chat+code, only show on completed messages
 
 ## Preview
 

@@ -12,6 +12,7 @@ import {
 
 import { formatTokens } from "../formatter";
 import { buildBar, buildSectionRule, formatTimeUntil, maxContentWidth } from "../render";
+import type { DisplayMode } from "../sidebar";
 
 function buildLiveWindowLine(
   icon: string,
@@ -173,7 +174,8 @@ function buildProviderLimitLines(
   ];
 }
 
-export function buildLimitsSummary(textMode = false): string {
+export function buildLimitsSummary(mode: DisplayMode = "normal"): string {
+  const textMode = mode === "text";
   const liveProviders = getLiveProviders();
   const hasLiveData = liveProviders.length > 0;
   if (!hasAnyProviderLimits() && !hasLiveData) {

@@ -26,13 +26,13 @@ describe("buildTodaySummary", () => {
 
   it("should return a string", () => {
     const rows: RollupRow[] = [];
-    const result = buildTodaySummary(rows, false);
+    const result = buildTodaySummary(rows, "normal");
     expect(typeof result).toBe("string");
   });
 
   it("should contain Today section header", () => {
     const rows: RollupRow[] = [];
-    const result = buildTodaySummary(rows, false);
+    const result = buildTodaySummary(rows, "normal");
     expect(result).toContain("Today");
   });
 
@@ -56,8 +56,68 @@ describe("buildTodaySummary", () => {
       },
     ];
 
-    const result = buildTodaySummary(rows, false);
+    const result = buildTodaySummary(rows, "text");
     expect(result).toContain("$1.50");
     expect(result).not.toContain(" tok");
+  });
+
+  it("shows compact output without breakdown or budget", async () => {
+    const budget = await import("../../../src/analytics/budget");
+    vi.mocked(budget.getBudgetConfig).mockReturnValue({ daily: 10_000 });
+    vi.mocked(budget.checkBudget).mockReturnValue([
+      { period: "daily", ratio: 0.5, exceeded: false, used: 5_000, limit: 10_000 },
+    ]);
+
+    const rows: RollupRow[] = [
+      {
+        date: "2026-03-14",
+        kind: "provider",
+        name: "anthropic",
+        inp: 1_000,
+        out: 500,
+        think: 0,
+        chat: 0,
+        code: 0,
+        cache_r: 0,
+        cache_w: 0,
+        cost: 0,
+        count: 1,
+      },
+    ];
+
+    const result = buildTodaySummary(rows, "compact");
+
+    expect(result).toContain("Σ total");
+    expect(result).not.toContain("Breakdown");
+    expect(result).not.toContain("Budget");
+  });
+
+  it("shows budget only in extend and text modes", async () => {
+    const budget = await import("../../../src/analytics/budget");
+    vi.mocked(budget.getBudgetConfig).mockReturnValue({ daily: 10_000 });
+    vi.mocked(budget.checkBudget).mockReturnValue([
+      { period: "daily", ratio: 0.5, exceeded: false, used: 5_000, limit: 10_000 },
+    ]);
+
+    const rows: RollupRow[] = [
+      {
+        date: "2026-03-14",
+        kind: "provider",
+        name: "anthropic",
+        inp: 1_000,
+        out: 500,
+        think: 0,
+        chat: 0,
+        code: 0,
+        cache_r: 0,
+        cache_w: 0,
+        cost: 0,
+        count: 1,
+      },
+    ];
+
+    expect(buildTodaySummary(rows, "normal")).not.toContain("Budget");
+    expect(buildTodaySummary(rows, "extend")).toContain("Budget");
+    expect(buildTodaySummary(rows, "text")).toContain("Budget");
   });
 });

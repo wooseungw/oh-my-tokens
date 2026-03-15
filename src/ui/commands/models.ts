@@ -7,11 +7,14 @@ import {
   maxContentWidth,
   visualWidth,
 } from "../render";
+import type { DisplayMode } from "../sidebar";
 
 const MODELS_TITLE = "oh-my-tokens — Model Usage";
 
-export function buildModelsSummary(textMode = false): string {
-  const models = getModelRollups();
+export function buildModelsSummary(mode: DisplayMode = "normal"): string {
+  const textMode = mode === "text";
+  const limit = mode === "compact" ? 3 : Number.POSITIVE_INFINITY;
+  const models = getModelRollups().slice(0, limit);
   const emptyRule = buildSectionRule();
 
   if (models.length === 0) {
