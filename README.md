@@ -9,9 +9,9 @@
 
 ## Recent Updates
 
+- `fix` Separator width explosion on multi-line content (trend 300+→46 chars)
 - `fix` Remove dead settings (lang), wire toast.durationMs and retention to config
 - `fix` Toast: correct total to think+chat+code, only show on completed messages
-- `feat` Adaptive separator width — rules and dividers scale to widest content line
 
 ## Preview
 

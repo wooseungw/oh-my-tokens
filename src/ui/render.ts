@@ -3,7 +3,8 @@ import { formatTokens } from "./formatter";
 export const SECTION_WIDTH = 42;
 
 export function maxContentWidth(...lines: string[]): number {
-  return Math.max(SECTION_WIDTH, ...lines.map(visualWidth));
+  const allLines = lines.flatMap((line) => line.split("\n"));
+  return Math.max(SECTION_WIDTH, ...allLines.map(visualWidth));
 }
 
 export function buildSectionRule(width = SECTION_WIDTH): string {
