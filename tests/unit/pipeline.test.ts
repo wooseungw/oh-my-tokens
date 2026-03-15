@@ -225,14 +225,18 @@ describe("createPipelineHooks", () => {
     });
 
     expect(showToastMock).toHaveBeenCalledOnce();
-    expect(showToastMock).toHaveBeenCalledWith(expect.anything(), {
-      think: 12,
-      chat: 0,
-      code: 80,
-      total: 92,
-      provider: "anthropic",
-      model: "claude-sonnet-4",
-    });
+    expect(showToastMock).toHaveBeenCalledWith(
+      expect.anything(),
+      {
+        think: 12,
+        chat: 0,
+        code: 80,
+        total: 92,
+        provider: "anthropic",
+        model: "claude-sonnet-4",
+      },
+      9000,
+    );
   });
 
   it("skips toast for incomplete (streaming) messages", async () => {

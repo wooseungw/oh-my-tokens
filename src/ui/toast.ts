@@ -18,13 +18,17 @@ export function formatToastMessage(data: ToastData): string {
   ].join("\n");
 }
 
-export async function showToast(input: PluginInput, data: ToastData): Promise<void> {
+export async function showToast(
+  input: PluginInput,
+  data: ToastData,
+  durationMs = 9000,
+): Promise<void> {
   await input.client.tui.showToast({
     body: {
       title: "oh-my-tokens",
       message: formatToastMessage(data),
       variant: "info",
-      duration: 9000,
+      duration: durationMs,
     },
   });
 }

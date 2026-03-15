@@ -141,7 +141,8 @@ export function createPipelineHooks(_input: PluginInput): Partial<Hooks> {
         model: message.modelID,
       });
 
-      if (getToastConfig().enabled && message.time.completed) {
+      const toastCfg = getToastConfig();
+      if (toastCfg.enabled && message.time.completed) {
         const toastData = {
           think: breakdown.think,
           chat: breakdown.chat,
@@ -150,7 +151,7 @@ export function createPipelineHooks(_input: PluginInput): Partial<Hooks> {
           provider,
           model: message.modelID,
         };
-        showToast(_input, toastData).catch(() => {});
+        showToast(_input, toastData, toastCfg.durationMs).catch(() => {});
       }
     },
   };

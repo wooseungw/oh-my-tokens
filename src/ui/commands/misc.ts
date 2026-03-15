@@ -1,5 +1,6 @@
 import pkg from "../../../package.json";
 
+import { getRetentionSetting } from "../../config/reader";
 import { execute, queryAll, queryOne, runInTransaction } from "../../storage/db";
 import { getTodayRollups, type RollupRow } from "../../storage/rollup";
 import { todayDateKey } from "../../utils";
@@ -78,6 +79,8 @@ function formatCount(value: number): string {
 }
 
 function getRetentionDays(): number {
+  const fromConfig = getRetentionSetting();
+  if (fromConfig !== undefined) return fromConfig;
   const raw = process.env.OMT_RETENTION_DAYS ?? process.env.OH_MY_TOKENS_RETENTION_DAYS;
   const parsed = raw === undefined ? Number.NaN : Number.parseInt(raw, 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 90;

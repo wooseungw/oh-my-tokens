@@ -9,9 +9,9 @@
 
 ## Recent Updates
 
+- `fix` Remove dead settings (lang), wire toast.durationMs and retention to config
 - `fix` Toast: correct total to think+chat+code, only show on completed messages
 - `feat` Adaptive separator width — rules and dividers scale to widest content line
-- `test` Fix integration tests: remove stale vi.unmock, platform-aware postinstall env
 
 ## Preview
 
@@ -164,9 +164,6 @@ You can extend it with any of the following options:
     "enabled": true,
     "durationMs": 9000
   },
-
-  // Language: "auto" | "en" | "ko" | "ja" | "zh"
-  "lang": "auto",
 
   // Data retention (days)
   "retention": 90

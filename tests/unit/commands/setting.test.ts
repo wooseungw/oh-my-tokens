@@ -74,37 +74,23 @@ describe("setting commands", () => {
     });
   });
 
-  it("buildSettingCommandOutput includes [not yet implemented] for unit setting", () => {
+  it("buildSettingCommandOutput shows unit hint without [not yet implemented]", () => {
     const result = buildSettingCommandOutput("unit");
 
-    expect(result).toContain("[not yet implemented]");
+    expect(result).not.toContain("[not yet implemented]");
     expect(result).toContain("tokens | cost");
   });
 
-  it("buildSettingCommandOutput includes [not yet implemented] for lang setting", () => {
+  it("buildSettingCommandOutput treats lang as unknown setting", () => {
     const result = buildSettingCommandOutput("lang");
 
-    expect(result).toContain("[not yet implemented]");
-    expect(result).toContain("auto | en | ko | ja | zh");
+    expect(result).toContain("Unknown setting: lang");
   });
 
-  it("buildSettingCommandOutput does not include [not yet implemented] for other settings", () => {
-    const result = buildSettingCommandOutput("display");
-
-    expect(result).not.toContain("[not yet implemented]");
-    expect(result).toContain("compact | normal | extend | text");
-  });
-
-  it("buildSettingDisplay includes [not yet implemented] for unit and lang", () => {
+  it("buildSettingDisplay does not include lang row", () => {
     const result = buildSettingCommandOutput("");
 
     expect(result).toContain("unit");
-    expect(result).toContain("lang");
-    const lines = result.split("\n");
-    const unitLine = lines.find((line) => line.includes("unit"));
-    const langLine = lines.find((line) => line.includes("lang"));
-
-    expect(unitLine).toContain("[not yet implemented]");
-    expect(langLine).toContain("[not yet implemented]");
+    expect(result).not.toContain("lang");
   });
 });

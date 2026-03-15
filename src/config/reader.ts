@@ -65,6 +65,12 @@ export function extractBudgetConfig(raw: Record<string, unknown>): BudgetConfig 
   return parsed;
 }
 
+export function getRetentionSetting(): number | undefined {
+  const cfg = readPluginConfigFromFile(findOpencodeConfigPath());
+  const val = Number(cfg.retention);
+  return Number.isFinite(val) && val > 0 ? val : undefined;
+}
+
 export function getUnitSetting(): "tokens" | "cost" {
   const cfg = readPluginConfigFromFile(findOpencodeConfigPath());
   return cfg.unit === "cost" ? "cost" : "tokens";

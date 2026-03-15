@@ -88,9 +88,8 @@ function buildSettingDisplay(): string {
     `Config   ${omtPath}`,
     "",
     row("display", cfg.display, "compact | normal | extend | text"),
-    row("unit", cfg.unit, "tokens | cost  [not yet implemented]"),
+    row("unit", cfg.unit, "tokens | cost"),
     row("enrichment", cfg.enrichment, "off | auto | manual | opencode-quota"),
-    row("lang", cfg.lang, "auto | en | ko | ja | zh  [not yet implemented]"),
     row("retention", cfg.retention, "<number> (days)"),
     row("budget.daily", budget.daily, "<number> (tokens)"),
     row("budget.weekly", budget.weekly, "<number> (tokens)"),
@@ -107,13 +106,13 @@ function buildSettingDisplay(): string {
   return [
     title,
     rule,
-    ...contentLines.slice(0, 7),
+    ...contentLines.slice(0, 6),
     buildSectionDivider("Budget", width),
-    ...contentLines.slice(7, 13),
+    ...contentLines.slice(6, 12),
     buildSectionDivider("Toast", width),
-    ...contentLines.slice(13, 15),
+    ...contentLines.slice(12, 14),
     "",
-    contentLines[15],
+    contentLines[14],
     rule,
   ].join("\n");
 }
@@ -196,7 +195,6 @@ export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
   display: { type: "enum", values: ["compact", "normal", "extend", "text"] },
   unit: { type: "enum", values: ["tokens", "cost"] },
   enrichment: { type: "enum", values: ["off", "auto", "manual", "opencode-quota"] },
-  lang: { type: "enum", values: ["auto", "en", "ko", "ja", "zh"] },
   retention: { type: "positive-integer", hint: "days", example: "90" },
   "budget.daily": { type: "positive-integer", hint: "tokens", example: "500000" },
   "budget.weekly": { type: "positive-integer", hint: "tokens", example: "3000000" },
@@ -346,11 +344,10 @@ function buildSettingHintOutput(key: string, spec: SettingSpec): string {
   const hint = specHint(spec);
   const example = specExample(spec);
   const current = readCurrentSettingValue(getEffectivePluginConfig(), key);
-  const notYetImplementedNote = key === "unit" || key === "lang" ? "  [not yet implemented]" : "";
   const lines = [
     "oh-my-tokens — Settings",
     buildSectionRule(),
-    `  ${key.padEnd(24)} ${hint}${notYetImplementedNote}`,
+    `  ${key.padEnd(24)} ${hint}`,
     ...(current !== undefined ? [`  Current: ${String(current)}`] : []),
     "",
     `Usage:   /omt setting ${key} ${example}`,
