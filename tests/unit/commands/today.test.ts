@@ -120,4 +120,57 @@ describe("buildTodaySummary", () => {
     expect(buildTodaySummary(rows, "extend")).toContain("Budget");
     expect(buildTodaySummary(rows, "text")).toContain("Budget");
   });
+
+  it("extend shows Budget and Stats even without budget configured", async () => {
+    const budget = await import("../../../src/analytics/budget");
+    vi.mocked(budget.getBudgetConfig).mockReturnValue({});
+    vi.mocked(budget.checkBudget).mockReturnValue([]);
+
+    const rows: RollupRow[] = [
+      {
+        date: "2026-03-14",
+        kind: "provider",
+        name: "anthropic",
+        inp: 1_000,
+        out: 500,
+        think: 0,
+        chat: 0,
+        code: 0,
+        cache_r: 0,
+        cache_w: 0,
+        cost: 0,
+        count: 3,
+      },
+    ];
+
+    const result = buildTodaySummary(rows, "extend");
+    expect(result).toContain("Budget");
+    expect(result).toContain("No budgets configured.");
+    expect(result).toContain("Stats");
+    expect(result).toContain("requests");
+    expect(result).toContain("providers");
+  });
+
+  it("normal does not show Stats section", () => {
+    const rows: RollupRow[] = [
+      {
+        date: "2026-03-14",
+        kind: "provider",
+        name: "anthropic",
+        inp: 1_000,
+        out: 500,
+        think: 0,
+        chat: 0,
+        code: 0,
+        cache_r: 0,
+        cache_w: 0,
+        cost: 0,
+        count: 1,
+      },
+    ];
+
+    const result = buildTodaySummary(rows, "normal");
+    expect(result).not.toContain("Stats");
+    expect(result).not.toContain("📊");
+  });
 });

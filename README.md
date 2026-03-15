@@ -9,9 +9,9 @@
 
 ## Recent Updates
 
+- `fix` Display mode rendering: quota before bars, extend shows budget+stats, setting preview uses real output
 - `feat` Display mode affects slash commands: compact/normal/extend show different detail levels
 - `fix` Separator width explosion on multi-line content (trend 300+→46 chars)
-- `fix` Remove dead settings (lang), wire toast.durationMs and retention to config
 
 ## Preview
 

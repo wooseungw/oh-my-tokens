@@ -222,6 +222,87 @@ function buildBudgetContentLines(total: number, todayRequests: number, textMode 
   return lines;
 }
 
+const PLACEHOLDER_MAP: Record<string, string> = {
+  __TODAY_DIVIDER__: "Today",
+  __BREAKDOWN_DIVIDER__: "Breakdown",
+  __BUDGET_DIVIDER__: "Budget",
+  __STATS_DIVIDER__: "Stats",
+};
+
+function resolvePlaceholderForWidth(line: string): string[] {
+  const label = PLACEHOLDER_MAP[line];
+  if (label !== undefined) return [label];
+  if (line.startsWith("__PROVIDER_HEADER__")) {
+    const [name, tokLabel] = line.slice("__PROVIDER_HEADER__".length).split("\u0000");
+    return [`${name}${tokLabel.length > 0 ? ` ${tokLabel}` : ""}`];
+  }
+  return [line];
+}
+
+function renderPlaceholder(line: string, width: number): string {
+  const label = PLACEHOLDER_MAP[line];
+  if (label !== undefined) return buildSectionDivider(label, width);
+  if (line.startsWith("__PROVIDER_HEADER__")) {
+    const [name, tokLabel] = line.slice("__PROVIDER_HEADER__".length).split("\u0000");
+    return buildProviderSectionHeader(name, tokLabel.length > 0 ? tokLabel : undefined, width);
+  }
+  return line;
+}
+
+function appendQuotaBlocks(output: string[], providerBlocks: ProviderBlock[]): void {
+  for (const block of providerBlocks) {
+    if (block.contentLines.length === 0) continue;
+    output.push(`__PROVIDER_HEADER__${block.name}\u0000${block.tokLabel ?? ""}`);
+    output.push(...block.contentLines);
+  }
+}
+
+function buildSections(ctx: {
+  mode: DisplayMode;
+  usageLines: string[];
+  providerBlocks: ProviderBlock[];
+  breakdownLines: string[];
+  budgetLines: string[];
+  total: number;
+  todayRequests: number;
+  providerCount: number;
+}): string[] {
+  const output: string[] = [];
+
+  if (ctx.mode === "compact") {
+    if (ctx.usageLines.length > 0) {
+      output.push("__TODAY_DIVIDER__", ...ctx.usageLines);
+    }
+    output.push(`  Σ total  ${formatTokens(ctx.total)}`);
+    return output;
+  }
+
+  const hasQuota = ctx.providerBlocks.some((b) => b.contentLines.length > 0);
+  if (hasQuota) {
+    appendQuotaBlocks(output, ctx.providerBlocks);
+  }
+
+  if (ctx.usageLines.length > 0) {
+    output.push("__TODAY_DIVIDER__", ...ctx.usageLines);
+  }
+
+  output.push("__BREAKDOWN_DIVIDER__", ...ctx.breakdownLines);
+
+  if (ctx.mode === "normal") return output;
+
+  if (ctx.budgetLines.length > 0) {
+    output.push("__BUDGET_DIVIDER__", ...ctx.budgetLines);
+  } else {
+    output.push("__BUDGET_DIVIDER__", "  No budgets configured.");
+  }
+  output.push(
+    "__STATS_DIVIDER__",
+    `  📊 requests  ${ctx.todayRequests}`,
+    `  📊 providers ${ctx.providerCount}`,
+  );
+  return output;
+}
+
 export function buildTodaySummary(rows: RollupRow[], mode: DisplayMode = "normal"): string {
   const textMode = mode === "text";
   const todayTotal = findTodayTotal(rows);
@@ -248,7 +329,6 @@ export function buildTodaySummary(rows: RollupRow[], mode: DisplayMode = "normal
   const labelWidth = Math.max(LABEL_AREA_MIN, ...providerRows.map((row) => visualWidth(row.name)));
   const pct = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
 
-  const title = "oh-my-tokens — Today's Summary";
   const providerBlocks = liveProviders.map((name) => {
     const row = todayMap.get(name);
     return buildProviderBlock(
@@ -280,46 +360,22 @@ export function buildTodaySummary(rows: RollupRow[], mode: DisplayMode = "normal
   ];
   const budgetLines = buildBudgetContentLines(total, todayRequests, textMode);
 
-  const output: string[] = [title];
-
-  if (usageLines.length > 0) {
-    output.push("__TODAY_DIVIDER__", ...usageLines);
-  }
-  if (mode === "compact") {
-    output.push(`  Σ total  ${formatTokens(total)}`);
-  } else {
-    for (const block of providerBlocks) {
-      output.push(`__PROVIDER_HEADER__${block.name}\u0000${block.tokLabel ?? ""}`);
-      output.push(...block.contentLines);
-    }
-    output.push("__BREAKDOWN_DIVIDER__", ...breakdownLines);
-    if (mode !== "normal" && budgetLines.length > 0) {
-      output.push("__BUDGET_DIVIDER__", ...budgetLines);
-    }
-  }
-
-  const allContent = output.flatMap((line) => {
-    if (line === "__TODAY_DIVIDER__") return ["Today"];
-    if (line === "__BREAKDOWN_DIVIDER__") return ["Breakdown"];
-    if (line === "__BUDGET_DIVIDER__") return ["Budget"];
-    if (line.startsWith("__PROVIDER_HEADER__")) {
-      const [name, tokLabel] = line.slice("__PROVIDER_HEADER__".length).split("\u0000");
-      return [`${name}${tokLabel.length > 0 ? ` ${tokLabel}` : ""}`];
-    }
-    return [line];
+  const title = "oh-my-tokens — Today's Summary";
+  const sectionLines = buildSections({
+    mode,
+    usageLines,
+    providerBlocks,
+    breakdownLines,
+    budgetLines,
+    total,
+    todayRequests,
+    providerCount: providerRows.length,
   });
+
+  const output = [title, ...sectionLines];
+  const allContent = output.flatMap(resolvePlaceholderForWidth);
   const width = maxContentWidth(...allContent);
-
-  const rendered = output.map((line) => {
-    if (line === "__TODAY_DIVIDER__") return buildSectionDivider("Today", width);
-    if (line === "__BREAKDOWN_DIVIDER__") return buildSectionDivider("Breakdown", width);
-    if (line === "__BUDGET_DIVIDER__") return buildSectionDivider("Budget", width);
-    if (line.startsWith("__PROVIDER_HEADER__")) {
-      const [name, tokLabel] = line.slice("__PROVIDER_HEADER__".length).split("\u0000");
-      return buildProviderSectionHeader(name, tokLabel.length > 0 ? tokLabel : undefined, width);
-    }
-    return line;
-  });
+  const rendered = output.map((line) => renderPlaceholder(line, width));
 
   if (rendered.length === 1) {
     rendered.push(buildSectionDivider("Today", width));

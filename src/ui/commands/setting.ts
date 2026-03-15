@@ -1,23 +1,13 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
-import { computeTotalTokens } from "../../analytics/token-math";
 import { findOhMyTokensConfigPath, findOpencodeConfigPath } from "../../paths";
-import { getTodayRollups, type RollupRow } from "../../storage/rollup";
-import { buildSectionDivider, buildSectionRule, formatUsageLine, maxContentWidth } from "../render";
+import { getTodayRollups } from "../../storage/rollup";
+import { buildSectionDivider, buildSectionRule, maxContentWidth } from "../render";
 import type { DisplayMode } from "../sidebar";
+import { buildTodaySummary } from "./today";
 
 type SettingValue = string | number | boolean;
-
-interface UsageTotals {
-  inp: number;
-  out: number;
-  think: number;
-  chat: number;
-  code: number;
-  cache_r: number;
-  cache_w: number;
-}
 
 function readOhMyTokensConfig(configPath: string): Record<string, unknown> {
   if (!existsSync(configPath)) return {};
@@ -45,15 +35,6 @@ function getEffectivePluginConfig(): Record<string, unknown> {
     return readOhMyTokensConfig(omtPath);
   }
   return readRawPluginConfig(findOpencodeConfigPath());
-}
-
-function getDisplayMode(): DisplayMode {
-  const cfg = getEffectivePluginConfig();
-  const display = cfg.display;
-  if (display === "compact" || display === "normal" || display === "extend" || display === "text") {
-    return display;
-  }
-  return "normal";
 }
 
 function coerceSettingValue(raw: string): SettingValue {
@@ -278,57 +259,9 @@ function validateSettingValue(key: string, value: SettingValue): string | null {
   }
 }
 
-function findTodayTotal(rows: RollupRow[]): UsageTotals {
-  const totalRow = rows.find((row) => row.kind === "total" && row.name === "*");
-
-  if (totalRow !== undefined) {
-    return totalRow;
-  }
-
-  return rows
-    .filter((row) => row.kind === "provider")
-    .reduce<UsageTotals>(
-      (totals, row) => ({
-        inp: totals.inp + row.inp,
-        out: totals.out + row.out,
-        think: totals.think + row.think,
-        chat: totals.chat + row.chat,
-        code: totals.code + row.code,
-        cache_r: totals.cache_r + row.cache_r,
-        cache_w: totals.cache_w + row.cache_w,
-      }),
-      { inp: 0, out: 0, think: 0, chat: 0, code: 0, cache_r: 0, cache_w: 0 },
-    );
-}
-
-function buildSettingPreview(textMode: boolean): string {
+function buildSettingPreview(mode: DisplayMode): string {
   const rows = getTodayRollups();
-  const providerRows = rows
-    .filter((row) => row.kind === "provider")
-    .sort((left, right) => computeTotalTokens(right) - computeTotalTokens(left));
-
-  if (providerRows.length === 0) {
-    return [
-      "oh-my-tokens — Today's Summary",
-      buildSectionRule(),
-      "No usage recorded today.",
-      buildSectionRule(),
-    ].join("\n");
-  }
-
-  const total = computeTotalTokens(findTodayTotal(rows));
-  const labelWidth = Math.max(10, ...providerRows.map((row) => row.name.length));
-
-  return [
-    "oh-my-tokens — Today's Summary",
-    buildSectionRule(),
-    ...providerRows.map((row) => {
-      const providerTotal = computeTotalTokens(row);
-      const percent = total > 0 ? (providerTotal / total) * 100 : 0;
-      return formatUsageLine(row.name, percent, providerTotal, labelWidth, textMode);
-    }),
-    buildSectionRule(),
-  ].join("\n");
+  return buildTodaySummary(rows, mode);
 }
 
 function buildUnknownSettingOutput(key: string): string {
@@ -379,7 +312,7 @@ function buildSettingSuccessOutput(
     (value === "compact" || value === "normal" || value === "extend" || value === "text")
   ) {
     lines.push("", buildSectionDivider("Preview"));
-    lines.push(buildSettingPreview(value === "text" || getDisplayMode() === "text"));
+    lines.push(buildSettingPreview(value as DisplayMode));
   }
   return lines.join("\n");
 }
