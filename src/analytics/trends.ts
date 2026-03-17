@@ -1,4 +1,4 @@
-import { getRollups, type RollupRow } from "../storage/rollup";
+import { getRollups, getWeeklyResetDayIndex, type RollupRow } from "../storage/rollup";
 import { formatCost, formatTokens } from "../ui/formatter";
 import { dateKeyFromMs } from "../utils";
 import { aggregateByDate } from "./aggregator";
@@ -60,11 +60,12 @@ function getDailyUsage(rows: RollupRow[]) {
 }
 
 function getWeekWindow(offsetWeeks: number): { from: string; to: string } {
+  const resetDayIndex = getWeeklyResetDayIndex();
   const today = new Date();
   const shifted = addLocalDays(today, offsetWeeks * 7);
   const day = shifted.getDay();
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-  const start = addLocalDays(shifted, diffToMonday);
+  const daysBack = (day - resetDayIndex + 7) % 7;
+  const start = addLocalDays(shifted, -daysBack);
   const end = addLocalDays(start, 6);
 
   return {

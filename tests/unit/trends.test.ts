@@ -8,6 +8,7 @@ const { getRollupsMock } = vi.hoisted(() => ({
 
 vi.mock("../../src/storage/rollup", () => ({
   getRollups: getRollupsMock,
+  getWeeklyResetDayIndex: () => 1,
 }));
 
 import {
