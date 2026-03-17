@@ -13,6 +13,7 @@ import { runBackfill } from "./storage/backfill";
 import { setWeeklyResetDay } from "./storage/rollup";
 import { handleOmtCommand } from "./ui/commands/index";
 import { checkForUpdate } from "./update-check";
+import { setDateKeyTimezone } from "./utils";
 
 export { buildSidebarItems as getSidebarItems } from "./ui/sidebar";
 
@@ -85,6 +86,7 @@ export const OhMyTokensPlugin: Plugin = async (input) => {
       const budgetConfig = extractBudgetConfig(pluginCfg);
       setBudgetConfig(budgetConfig);
       setWeeklyResetDay(budgetConfig.weeklyResetDay);
+      setDateKeyTimezone(budgetConfig.timezone);
     }
     _enrichmentConfig = {
       mode: normalizeMode(pluginCfg.enrichment as string | undefined),
