@@ -96,7 +96,10 @@ export function sumNestedUsage(body: UsageBody | null, unit: "tokens" | "request
 
 export async function safeFetch(url: string, init?: RequestInit): Promise<unknown> {
   try {
-    const res = await fetch(url, init);
+    const res = await fetch(url, {
+      ...init,
+      signal: init?.signal ?? AbortSignal.timeout(10_000),
+    });
     if (!res.ok) return null;
     return await res.json();
   } catch {

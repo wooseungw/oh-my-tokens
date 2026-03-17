@@ -11,8 +11,12 @@ export interface AuthEntry {
   key?: string;
 }
 
+const SECONDS_MS_BOUNDARY = 1e12;
+
 function isTokenExpired(entry: AuthEntry): boolean {
-  return typeof entry.expires === "number" && entry.expires < Date.now();
+  if (typeof entry.expires !== "number") return false;
+  const expiresMs = entry.expires < SECONDS_MS_BOUNDARY ? entry.expires * 1000 : entry.expires;
+  return expiresMs < Date.now();
 }
 
 export function getAuthJsonCandidatePaths(): string[] {
