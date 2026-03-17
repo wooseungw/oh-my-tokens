@@ -16,6 +16,14 @@ describe("formatTokens", () => {
   it("formats millions with one decimal place", () => {
     expect(formatTokens(1_200_000)).toBe("1.2M");
   });
+
+  it("formats billions with one decimal place", () => {
+    expect(formatTokens(1_500_000_000)).toBe("1.5B");
+  });
+
+  it("formats exactly one billion", () => {
+    expect(formatTokens(1_000_000_000)).toBe("1.0B");
+  });
 });
 
 describe("formatCost", () => {

@@ -9,9 +9,9 @@
 
 ## Recent Updates
 
-- `test` Increase test coverage from 59% to 85% (+124 tests across 8 files)
-- `fix` Display mode rendering: quota before bars, extend shows budget+stats, setting preview uses real output
-- `feat` Display mode affects slash commands: compact/normal/extend show different detail levels
+- `fix` Fix hourly token double-counting, timezone mismatch, NaN crashes, and safeFetch hangs
+- `fix` Detect OAuth expires unit (seconds vs milliseconds), use configured weekly reset day in WoW
+- `feat` Add billion (B) tier to formatTokens for large token counts
 
 ## Preview
 
