@@ -50,7 +50,8 @@ export function buildSectionDivider(name: string, width = SECTION_WIDTH): string
 }
 
 export function buildBar(percent: number, width = BAR_WIDTH): string {
-  const normalized = Math.max(0, Math.min(percent, 100));
+  const safe = Number.isFinite(percent) ? percent : 0;
+  const normalized = Math.max(0, Math.min(safe, 100));
   const filled = Math.round((normalized / 100) * width);
   return `${"█".repeat(filled)}${"░".repeat(width - filled)}`;
 }
@@ -85,7 +86,9 @@ export function buildProviderSectionHeader(
 }
 
 export function formatTimeUntil(isoString: string): string {
-  const ms = new Date(isoString).getTime() - Date.now();
+  const target = new Date(isoString).getTime();
+  if (!Number.isFinite(target)) return "";
+  const ms = target - Date.now();
   if (ms <= 0) return "now";
   const hours = Math.floor(ms / 3_600_000);
   const minutes = Math.floor((ms % 3_600_000) / 60_000);

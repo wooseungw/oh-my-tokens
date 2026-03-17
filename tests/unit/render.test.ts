@@ -25,6 +25,9 @@ describe("buildBar", () => {
   it("clamps at 100%", () => {
     expect(buildBar(110)).toBe("█".repeat(BAR_WIDTH));
   });
+  it("treats NaN as 0%", () => {
+    expect(buildBar(NaN)).toBe("░".repeat(BAR_WIDTH));
+  });
 });
 
 describe("buildProviderSectionHeader", () => {
@@ -170,6 +173,10 @@ describe("formatTimeUntil", () => {
 
     expect(result).toBe("0m");
     vi.useRealTimers();
+  });
+
+  it("returns empty string for invalid ISO string", () => {
+    expect(formatTimeUntil("not-a-date")).toBe("");
   });
 });
 
