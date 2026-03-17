@@ -80,6 +80,10 @@ export function setWeeklyResetDay(day: string | undefined): void {
   _weeklyResetDayIndex = day !== undefined ? (DAY_NAME_MAP[day.toLowerCase()] ?? 1) : 1;
 }
 
+export function getWeeklyResetDayIndex(): number {
+  return _weeklyResetDayIndex;
+}
+
 function weekBounds(date: Date): { from: string; to: string } {
   const currentDay = date.getDay();
   const daysBack = (currentDay - _weeklyResetDayIndex + 7) % 7;
@@ -396,7 +400,7 @@ export function getHourlyTotals(date?: string): Map<number, number> {
     `
       SELECT
         CAST(strftime('%H', datetime(ts / 1000, 'unixepoch', 'localtime')) AS INTEGER) AS hour,
-        CAST(SUM(inp + out + think + chat + code + cache_r + cache_w) AS INTEGER) AS tokens
+        CAST(SUM(inp + out + think + cache_r + cache_w) AS INTEGER) AS tokens
       FROM events
       WHERE date(ts / 1000, 'unixepoch', 'localtime') = ?
       GROUP BY hour
