@@ -71,6 +71,19 @@ export function getRetentionSetting(): number | undefined {
   return Number.isFinite(val) && val > 0 ? val : undefined;
 }
 
+export function getCodeModes(): Set<string> {
+  const cfg = readPluginConfigFromFile(findOpencodeConfigPath());
+  const modes = cfg.codeModes;
+  if (
+    Array.isArray(modes) &&
+    modes.length > 0 &&
+    modes.every((m: unknown) => typeof m === "string")
+  ) {
+    return new Set(modes as string[]);
+  }
+  return new Set(["coder", "task"]);
+}
+
 export function getUnitSetting(): "tokens" | "cost" {
   const cfg = readPluginConfigFromFile(findOpencodeConfigPath());
   return cfg.unit === "cost" ? "cost" : "tokens";

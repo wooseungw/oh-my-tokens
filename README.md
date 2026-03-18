@@ -9,9 +9,9 @@
 
 ## Recent Updates
 
-- `fix` Fix hourly token double-counting, timezone mismatch, NaN crashes, and safeFetch hangs
-- `fix` Detect OAuth expires unit (seconds vs milliseconds), use configured weekly reset day in WoW
-- `feat` Add billion (B) tier to formatTokens for large token counts
+- `feat` v2 SDK support: authoritative `tokens.total` from OpenCode, configurable `codeModes`
+- `feat` Schema v2 migration with `total` column in events + rollups, backfill existing data
+- `fix` Fix hourly token double-counting, timezone mismatch, NaN crashes, safeFetch hangs
 
 ## Preview
 

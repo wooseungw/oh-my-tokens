@@ -1,5 +1,6 @@
 import { Database as BunDatabase } from "bun:sqlite";
 
+import { getCodeModes } from "../config/reader";
 import { findOpenCodeDbPath } from "../paths";
 import { classify } from "../tracking/classifier";
 import { normalizeDisplayProvider } from "../tracking/normalizer";
@@ -105,8 +106,14 @@ function parsePayload(raw: string): ParsedMessagePayload | null {
   };
 }
 
+let _backfillCodeModes: Set<string> | undefined;
+
 function toolHeuristic(mode: string | undefined): number {
-  return mode === "coder" || mode === "task" ? 1 : 0;
+  if (mode === undefined) return 0;
+  if (_backfillCodeModes === undefined) {
+    _backfillCodeModes = getCodeModes();
+  }
+  return _backfillCodeModes.has(mode) ? 1 : 0;
 }
 
 function openReadOnlyDb(dbPath: string): BunDatabase {
@@ -162,6 +169,12 @@ function recoverRow(row: OpenCodeMessageRow): boolean {
     code: breakdown.code,
     tools: toolCount,
     cost: payload.cost ?? 0,
+    total:
+      (tokens?.input ?? 0) +
+      (tokens?.output ?? 0) +
+      (tokens?.reasoning ?? 0) +
+      (tokens?.cache?.read ?? 0) +
+      (tokens?.cache?.write ?? 0),
   });
 
   return true;
