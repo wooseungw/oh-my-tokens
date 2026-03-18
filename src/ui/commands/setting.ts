@@ -138,16 +138,23 @@ export function applyOhMyTokensSetting(
       return { ok: false, error: "Could not parse oh-my-tokens.json" };
     }
   }
+  const UNSAFE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
   const oldValue = readCurrentSettingValue(cfg, key);
   const dotIdx = key.indexOf(".");
   if (dotIdx !== -1) {
     const parentKey = key.slice(0, dotIdx);
     const childKey = key.slice(dotIdx + 1);
+    if (UNSAFE_KEYS.has(parentKey) || UNSAFE_KEYS.has(childKey)) {
+      return { ok: false, error: `Unsafe key: ${key}` };
+    }
     if (typeof cfg[parentKey] !== "object" || cfg[parentKey] === null) {
       cfg[parentKey] = {};
     }
     (cfg[parentKey] as Record<string, unknown>)[childKey] = value;
   } else {
+    if (UNSAFE_KEYS.has(key)) {
+      return { ok: false, error: `Unsafe key: ${key}` };
+    }
     cfg[key] = value;
   }
   try {
