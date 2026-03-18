@@ -41,6 +41,7 @@ function buildRecord(overrides: Partial<EventRecord> = {}): EventRecord {
     code: 40,
     tools: 2,
     cost: 0.42,
+    total: 155,
     ...overrides,
   };
 }
@@ -116,9 +117,9 @@ describe("recordEvent", () => {
     expect(eventRuns).toHaveLength(1);
     expect(rollupRuns).toHaveLength(3);
     expect(rollupRuns).toEqual([
-      ["2026-03-12", "provider", "anthropic", 100, 40, 8, 0, 40, 5, 2, 0.42, 1],
-      ["2026-03-12", "agent", "builder", 100, 40, 8, 0, 40, 5, 2, 0.42, 1],
-      ["2026-03-12", "total", "*", 100, 40, 8, 0, 40, 5, 2, 0.42, 1],
+      ["2026-03-12", "provider", "anthropic", 100, 40, 8, 0, 40, 5, 2, 0.42, 155, 1],
+      ["2026-03-12", "agent", "builder", 100, 40, 8, 0, 40, 5, 2, 0.42, 155, 1],
+      ["2026-03-12", "total", "*", 100, 40, 8, 0, 40, 5, 2, 0.42, 155, 1],
     ]);
   });
 
@@ -136,6 +137,7 @@ describe("recordEvent", () => {
       cache_r: 3,
       cache_w: 1,
       cost: 0.3,
+      total: 129,
     };
     const db = createDb({ existingRow, rollupRuns, changesRow: { changes: 1 } });
 
@@ -144,9 +146,9 @@ describe("recordEvent", () => {
     recordEvent(buildRecord());
 
     expect(rollupRuns).toEqual([
-      ["2026-03-12", "provider", "anthropic", 10, 10, 3, 0, 10, 2, 1, 0.12, 0],
-      ["2026-03-12", "agent", "builder", 10, 10, 3, 0, 10, 2, 1, 0.12, 0],
-      ["2026-03-12", "total", "*", 10, 10, 3, 0, 10, 2, 1, 0.12, 0],
+      ["2026-03-12", "provider", "anthropic", 10, 10, 3, 0, 10, 2, 1, 0.12, 26, 0],
+      ["2026-03-12", "agent", "builder", 10, 10, 3, 0, 10, 2, 1, 0.12, 26, 0],
+      ["2026-03-12", "total", "*", 10, 10, 3, 0, 10, 2, 1, 0.12, 26, 0],
     ]);
   });
 
@@ -164,6 +166,7 @@ describe("recordEvent", () => {
       cache_r: 5,
       cache_w: 2,
       cost: 0.42,
+      total: 155,
     };
     const db = createDb({ existingRow, rollupRuns, changesRow: { changes: 0 } });
 
@@ -188,6 +191,7 @@ describe("recordEvent", () => {
       cache_r: 0,
       cache_w: 0,
       cost: 0,
+      total: 0,
     };
     const db = createDb({ existingRow, rollupRuns, changesRow: { changes: 1 } });
 
@@ -204,13 +208,14 @@ describe("recordEvent", () => {
         cache_r: 0,
         cache_w: 0,
         cost: 0,
+        total: 0,
       }),
     );
 
     expect(rollupRuns).toEqual([
-      ["2026-03-12", "provider", "anthropic", 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      ["2026-03-12", "agent", "builder", 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      ["2026-03-12", "total", "*", 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      ["2026-03-12", "provider", "anthropic", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      ["2026-03-12", "agent", "builder", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      ["2026-03-12", "total", "*", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     ]);
   });
 
@@ -228,6 +233,7 @@ describe("recordEvent", () => {
       cache_r: 0,
       cache_w: 0,
       cost: 0,
+      total: 0,
     };
     const db = createDb({ existingRow, rollupRuns, changesRow: { changes: 1 } });
 
@@ -244,13 +250,14 @@ describe("recordEvent", () => {
         cache_r: 500,
         cache_w: 0,
         cost: 0,
+        total: 500,
       }),
     );
 
     expect(rollupRuns).toEqual([
-      ["2026-03-12", "provider", "anthropic", 0, 0, 0, 0, 0, 500, 0, 0, 0],
-      ["2026-03-12", "agent", "builder", 0, 0, 0, 0, 0, 500, 0, 0, 0],
-      ["2026-03-12", "total", "*", 0, 0, 0, 0, 0, 500, 0, 0, 0],
+      ["2026-03-12", "provider", "anthropic", 0, 0, 0, 0, 0, 500, 0, 0, 500, 0],
+      ["2026-03-12", "agent", "builder", 0, 0, 0, 0, 0, 500, 0, 0, 500, 0],
+      ["2026-03-12", "total", "*", 0, 0, 0, 0, 0, 500, 0, 0, 500, 0],
     ]);
   });
 });

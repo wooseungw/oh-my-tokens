@@ -22,6 +22,7 @@ export interface EventRecord {
   code: number;
   tools: number;
   cost: number;
+  total: number;
 }
 
 interface EventSnapshot {
@@ -36,6 +37,7 @@ interface EventSnapshot {
   cache_r: number;
   cache_w: number;
   cost: number;
+  total: number;
 }
 
 interface RollupDelta {
@@ -47,6 +49,7 @@ interface RollupDelta {
   cache_r: number;
   cache_w: number;
   cost: number;
+  total: number;
   count: number;
 }
 
@@ -68,7 +71,8 @@ function isEventSnapshot(value: unknown): value is EventSnapshot {
     typeof candidate.code === "number" &&
     typeof candidate.cache_r === "number" &&
     typeof candidate.cache_w === "number" &&
-    typeof candidate.cost === "number"
+    typeof candidate.cost === "number" &&
+    typeof candidate.total === "number"
   );
 }
 
@@ -76,7 +80,7 @@ function readExistingSnapshot(key: string): EventSnapshot | null {
   const existingRow = getDb()
     .query(
       `
-        SELECT ts, provider, agent, inp, out, think, chat, code, cache_r, cache_w, cost
+        SELECT ts, provider, agent, inp, out, think, chat, code, cache_r, cache_w, cost, total
         FROM events
         WHERE key = ?
       `,
@@ -114,6 +118,7 @@ function buildSnapshot(record: EventRecord): EventSnapshot {
     cache_r: record.cache_r,
     cache_w: record.cache_w,
     cost: record.cost,
+    total: record.total,
   };
 }
 
@@ -127,6 +132,7 @@ function subtractSnapshots(current: EventSnapshot, previous: EventSnapshot): Rol
     cache_r: current.cache_r - previous.cache_r,
     cache_w: current.cache_w - previous.cache_w,
     cost: current.cost - previous.cost,
+    total: current.total - previous.total,
     count: 0,
   };
 }
@@ -141,6 +147,7 @@ function negateSnapshot(snapshot: EventSnapshot): RollupDelta {
     cache_r: -snapshot.cache_r,
     cache_w: -snapshot.cache_w,
     cost: -snapshot.cost,
+    total: -snapshot.total,
     count: -1,
   };
 }
@@ -155,6 +162,7 @@ function deltaFromSnapshot(snapshot: EventSnapshot): RollupDelta {
     cache_r: snapshot.cache_r,
     cache_w: snapshot.cache_w,
     cost: snapshot.cost,
+    total: snapshot.total,
     count: 1,
   };
 }
@@ -163,8 +171,8 @@ function applyRollupDelta(date: string, kind: string, name: string, delta: Rollu
   getDb()
     .query(
       `
-        INSERT INTO rollups (date, kind, name, inp, out, think, chat, code, cache_r, cache_w, cost, count)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO rollups (date, kind, name, inp, out, think, chat, code, cache_r, cache_w, cost, total, count)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(date, kind, name) DO UPDATE SET
           inp = inp + excluded.inp,
           out = out + excluded.out,
@@ -174,6 +182,7 @@ function applyRollupDelta(date: string, kind: string, name: string, delta: Rollu
           cache_r = cache_r + excluded.cache_r,
           cache_w = cache_w + excluded.cache_w,
           cost = cost + excluded.cost,
+          total = total + excluded.total,
           count = count + excluded.count
       `,
     )
@@ -189,6 +198,7 @@ function applyRollupDelta(date: string, kind: string, name: string, delta: Rollu
       delta.cache_r,
       delta.cache_w,
       delta.cost,
+      delta.total,
       delta.count,
     );
 }
@@ -229,8 +239,8 @@ export function recordEvent(record: EventRecord): void {
 
     db.query(
       `
-        INSERT INTO events (key, ts, ver, sid, psid, pid, provider, model, agent, initiator, depth, inp, out, reasoning, cache_r, cache_w, think, chat, code, tools, cost)
-        VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO events (key, ts, ver, sid, psid, pid, provider, model, agent, initiator, depth, inp, out, reasoning, cache_r, cache_w, think, chat, code, tools, cost, total)
+        VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(key) DO UPDATE SET
           ts = excluded.ts,
           ver = ver + 1,
@@ -243,7 +253,8 @@ export function recordEvent(record: EventRecord): void {
           chat = excluded.chat,
           code = excluded.code,
           tools = excluded.tools,
-          cost = excluded.cost
+          cost = excluded.cost,
+          total = excluded.total
         WHERE excluded.inp + excluded.out + excluded.think + excluded.chat + excluded.code + excluded.cache_r + excluded.cache_w + excluded.reasoning + excluded.cost > inp + out + think + chat + code + cache_r + cache_w + reasoning + cost
       `,
     ).run(
@@ -267,6 +278,7 @@ export function recordEvent(record: EventRecord): void {
       record.code,
       record.tools,
       record.cost,
+      record.total,
     );
 
     if (readChangeCount() < 1) {

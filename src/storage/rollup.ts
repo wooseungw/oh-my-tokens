@@ -13,6 +13,7 @@ export interface RollupRow {
   cache_r: number;
   cache_w: number;
   cost: number;
+  total: number;
   count: number;
 }
 
@@ -27,6 +28,7 @@ export interface SessionSummary {
   cache_r: number;
   cache_w: number;
   cost: number;
+  total: number;
   count: number;
 }
 
@@ -39,6 +41,7 @@ interface AggregateRow {
   cache_r: number | null;
   cache_w: number | null;
   cost: number | null;
+  total: number | null;
   count: number | null;
 }
 
@@ -51,6 +54,7 @@ const SUM_TOKEN_COLUMNS = [
   "SUM(cache_r) AS cache_r",
   "SUM(cache_w) AS cache_w",
   "SUM(cost) AS cost",
+  "SUM(total) AS total",
   "COUNT(*) AS count",
 ].join(",\n        ");
 
@@ -119,6 +123,7 @@ function normalizeAggregate(date: string, row: AggregateRow | null): RollupRow |
     cache_r: row.cache_r ?? 0,
     cache_w: row.cache_w ?? 0,
     cost: row.cost ?? 0,
+    total: row.total ?? 0,
     count: row.count ?? 0,
   };
 }
@@ -126,7 +131,7 @@ function normalizeAggregate(date: string, row: AggregateRow | null): RollupRow |
 export function getTodayRollups(): RollupRow[] {
   return queryAll<RollupRow>(
     `
-      SELECT date, kind, name, inp, out, think, chat, code, cache_r, cache_w, cost, count
+      SELECT date, kind, name, inp, out, think, chat, code, cache_r, cache_w, cost, total, count
       FROM rollups
       WHERE date = ?
       ORDER BY
@@ -146,7 +151,7 @@ export function getTodayRollups(): RollupRow[] {
 export function getRollups(from: string, to: string): RollupRow[] {
   return queryAll<RollupRow>(
     `
-      SELECT date, kind, name, inp, out, think, chat, code, cache_r, cache_w, cost, count
+      SELECT date, kind, name, inp, out, think, chat, code, cache_r, cache_w, cost, total, count
       FROM rollups
       WHERE date BETWEEN ? AND ?
       ORDER BY date ASC, kind ASC, count DESC, name ASC
@@ -165,6 +170,7 @@ export function getSessionTotals(sessionId: string): {
   cache_r: number;
   cache_w: number;
   cost: number;
+  total: number;
   count: number;
 } | null {
   const row = queryOne<AggregateRow>(
@@ -190,6 +196,7 @@ export function getSessionTotals(sessionId: string): {
     cache_r: row.cache_r ?? 0,
     cache_w: row.cache_w ?? 0,
     cost: row.cost ?? 0,
+    total: row.total ?? 0,
     count: row.count,
   };
 }
@@ -210,11 +217,12 @@ export function getTopSessions(days = 7, limit = 15): SessionSummary[] {
         SUM(cache_r) AS cache_r,
         SUM(cache_w) AS cache_w,
         SUM(cost) AS cost,
+        SUM(total) AS total,
         COUNT(*) AS count
       FROM events
       WHERE ts >= ?
       GROUP BY sid
-      ORDER BY (SUM(inp) + SUM(out) + SUM(think) + SUM(cache_r) + SUM(cache_w)) DESC
+      ORDER BY SUM(total) DESC
       LIMIT ?
     `,
     sinceMs,
@@ -279,11 +287,12 @@ export function getMonthProviderRollups(): RollupRow[] {
         CAST(SUM(cache_r) AS INTEGER) AS cache_r,
         CAST(SUM(cache_w) AS INTEGER) AS cache_w,
         SUM(cost) AS cost,
+        CAST(SUM(total) AS INTEGER) AS total,
         CAST(SUM(count) AS INTEGER) AS count
       FROM rollups
       WHERE kind = 'provider' AND date BETWEEN ? AND ?
       GROUP BY name
-      ORDER BY (SUM(inp) + SUM(out) + SUM(think) + SUM(cache_r) + SUM(cache_w)) DESC,
+      ORDER BY SUM(total) DESC,
                name ASC
     `,
     from,
@@ -309,11 +318,12 @@ export function getWeekProviderRollups(): RollupRow[] {
         CAST(SUM(cache_r) AS INTEGER) AS cache_r,
         CAST(SUM(cache_w) AS INTEGER) AS cache_w,
         SUM(cost) AS cost,
+        CAST(SUM(total) AS INTEGER) AS total,
         CAST(SUM(count) AS INTEGER) AS count
       FROM rollups
       WHERE kind = 'provider' AND date BETWEEN ? AND ?
       GROUP BY name
-      ORDER BY (SUM(inp) + SUM(out) + SUM(think) + SUM(cache_r) + SUM(cache_w)) DESC,
+      ORDER BY SUM(total) DESC,
                name ASC
     `,
     from,
@@ -333,7 +343,7 @@ export function getHourProviderTotals(): Map<string, number> {
     `
       SELECT
         provider,
-        CAST(SUM(inp + out + think + cache_r + cache_w) AS INTEGER) AS tokens
+        CAST(SUM(total) AS INTEGER) AS tokens
       FROM events
       WHERE ts >= ?
       GROUP BY provider
@@ -354,6 +364,7 @@ interface ModelRow {
   cache_r: number | null;
   cache_w: number | null;
   cost: number | null;
+  total: number | null;
   count: number | null;
 }
 
@@ -367,7 +378,7 @@ export function getModelRollups(date?: string): RollupRow[] {
       FROM events
       WHERE date(ts / 1000, 'unixepoch', 'localtime') = ?
       GROUP BY model
-      ORDER BY (SUM(inp) + SUM(out) + SUM(think) + SUM(cache_r) + SUM(cache_w)) DESC,
+      ORDER BY SUM(total) DESC,
                name ASC
     `,
     dateKey,
@@ -385,6 +396,7 @@ export function getModelRollups(date?: string): RollupRow[] {
     cache_r: row.cache_r ?? 0,
     cache_w: row.cache_w ?? 0,
     cost: row.cost ?? 0,
+    total: row.total ?? 0,
     count: row.count ?? 0,
   }));
 }
@@ -400,7 +412,7 @@ export function getHourlyTotals(date?: string): Map<number, number> {
     `
       SELECT
         CAST(strftime('%H', datetime(ts / 1000, 'unixepoch', 'localtime')) AS INTEGER) AS hour,
-        CAST(SUM(inp + out + think + cache_r + cache_w) AS INTEGER) AS tokens
+        CAST(SUM(total) AS INTEGER) AS tokens
       FROM events
       WHERE date(ts / 1000, 'unixepoch', 'localtime') = ?
       GROUP BY hour

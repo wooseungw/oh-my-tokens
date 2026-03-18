@@ -64,6 +64,7 @@ describe("rollup storage queries", () => {
       cache_w: 2,
       cost: 0.42,
       count: 2,
+      total: 155,
     });
 
     expect(getSessionTotals("ses_1")).toEqual({
@@ -76,6 +77,7 @@ describe("rollup storage queries", () => {
       cache_w: 2,
       cost: 0.42,
       count: 2,
+      total: 155,
     });
   });
 
@@ -98,6 +100,7 @@ describe("rollup storage queries", () => {
       cache_w: 5,
       cost: 1.2,
       count: 4,
+      total: 455,
     });
 
     expect(getWeekTotal()).toEqual({
@@ -113,6 +116,7 @@ describe("rollup storage queries", () => {
       cache_w: 5,
       cost: 1.2,
       count: 4,
+      total: 455,
     });
     expect(queryOneMock).toHaveBeenCalledWith(
       expect.stringContaining("WHERE kind = 'total' AND name = '*' AND date BETWEEN ? AND ?"),
@@ -134,6 +138,7 @@ describe("rollup storage queries", () => {
       cache_w: 10,
       cost: 3.8,
       count: 11,
+      total: 1590,
     });
 
     expect(getMonthTotal()).toEqual({
@@ -149,6 +154,7 @@ describe("rollup storage queries", () => {
       cache_w: 10,
       cost: 3.8,
       count: 11,
+      total: 1590,
     });
     expect(queryOneMock).toHaveBeenCalledWith(
       expect.stringContaining("WHERE kind = 'total' AND name = '*' AND date BETWEEN ? AND ?"),
@@ -174,6 +180,7 @@ describe("rollup storage queries", () => {
         cache_w: 10,
         cost: 3.8,
         count: 11,
+        total: 1590,
       },
       {
         date: "2026-03-01",
@@ -188,6 +195,7 @@ describe("rollup storage queries", () => {
         cache_w: 0,
         cost: 0.5,
         count: 3,
+        total: 300,
       },
     ]);
 
@@ -219,6 +227,7 @@ describe("rollup storage queries", () => {
         cache_w: 5,
         cost: 1.2,
         count: 4,
+        total: 455,
       },
     ]);
 
@@ -268,6 +277,7 @@ describe("rollup storage queries", () => {
         cache_w: 20,
         cost: 2.5,
         count: 5,
+        total: 870,
       },
       {
         name: "gpt-4",
@@ -280,6 +290,7 @@ describe("rollup storage queries", () => {
         cache_w: 0,
         cost: 1.2,
         count: 3,
+        total: 400,
       },
     ]);
 
@@ -307,6 +318,7 @@ describe("rollup storage queries", () => {
         cache_w: 0,
         cost: 0.5,
         count: 1,
+        total: 150,
       },
     ]);
 
