@@ -1,6 +1,6 @@
 {
   "name": "oh-my-tokens",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "OpenCode plugin: per-provider, per-agent, per-task-type token usage tracking and visualization",
   "type": "module",
   "main": "dist/index.js",
