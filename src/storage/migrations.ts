@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 
-const CURRENT_SCHEMA_VERSION = 1;
+const CURRENT_SCHEMA_VERSION = 2;
 
 function isStateRow(value: unknown): value is { value: string | null } {
   return typeof value === "object" && value !== null && "value" in value;
@@ -81,6 +81,13 @@ function applyVersionOne(db: Database): void {
   `);
 }
 
+function applyVersionTwo(db: Database): void {
+  db.exec("ALTER TABLE events ADD COLUMN total INTEGER DEFAULT 0");
+  db.exec("ALTER TABLE rollups ADD COLUMN total INTEGER DEFAULT 0");
+  db.exec("UPDATE events SET total = inp + out + think + cache_r + cache_w WHERE total = 0");
+  db.exec("UPDATE rollups SET total = inp + out + think + cache_r + cache_w WHERE total = 0");
+}
+
 export function runMigrations(db: Database): void {
   const migrate = db.transaction(() => {
     db.exec(`
@@ -92,9 +99,14 @@ export function runMigrations(db: Database): void {
 
     let version = readSchemaVersion(db);
 
-    if (version < CURRENT_SCHEMA_VERSION) {
+    if (version < 1) {
       applyVersionOne(db);
-      version = CURRENT_SCHEMA_VERSION;
+      version = 1;
+    }
+
+    if (version < 2) {
+      applyVersionTwo(db);
+      version = 2;
     }
 
     db.query(
@@ -103,7 +115,7 @@ export function runMigrations(db: Database): void {
         VALUES (?, ?)
         ON CONFLICT(key) DO UPDATE SET value = excluded.value
       `,
-    ).run("schema_version", String(version));
+    ).run("schema_version", String(CURRENT_SCHEMA_VERSION));
   });
 
   migrate();
