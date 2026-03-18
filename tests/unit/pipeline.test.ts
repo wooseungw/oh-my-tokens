@@ -11,6 +11,7 @@ const {
   setLastReplyMock,
   getToastConfigMock,
   showToastMock,
+  getCodeModesMock,
 } = vi.hoisted(() => ({
   normalizeDisplayProviderMock: vi.fn(() => "anthropic"),
   classifyMock: vi.fn(() => ({ think: 12, chat: 0, code: 80 })),
@@ -22,6 +23,7 @@ const {
   setLastReplyMock: vi.fn(),
   getToastConfigMock: vi.fn(() => ({ enabled: false, durationMs: 9000 })),
   showToastMock: vi.fn(() => Promise.resolve()),
+  getCodeModesMock: vi.fn(() => new Set(["coder"])),
 }));
 
 vi.mock("../../src/tracking/normalizer", () => ({
@@ -52,6 +54,7 @@ vi.mock("../../src/ui/sidebar", () => ({
 
 vi.mock("../../src/config/reader", () => ({
   getToastConfig: getToastConfigMock,
+  getCodeModes: getCodeModesMock,
 }));
 
 vi.mock("../../src/ui/toast", () => ({
@@ -138,6 +141,7 @@ describe("createPipelineHooks", () => {
       code: 80,
       tools: 1,
       cost: 0.32,
+      total: 220,
     });
     expect(setCurrentSessionIdMock).toHaveBeenCalledWith("ses_1");
     expect(setLastReplyMock).toHaveBeenCalledWith({

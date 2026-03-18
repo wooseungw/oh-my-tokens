@@ -1,7 +1,7 @@
 import type { Hooks, PluginInput } from "@opencode-ai/plugin";
 import type { AssistantMessage, Event } from "@opencode-ai/sdk";
 
-import { getToastConfig } from "./config/reader";
+import { getCodeModes, getToastConfig } from "./config/reader";
 import { markCompacted, upsertSession } from "./storage/sessions";
 import { resolveAttribution } from "./tracking/attribution";
 import { classify } from "./tracking/classifier";
@@ -31,6 +31,16 @@ function readOptionalStringField(value: unknown, key: string): string | undefine
   return typeof field === "string" && field.length > 0 ? field : undefined;
 }
 
+function readOptionalNumberField(value: unknown, key: string): number | undefined {
+  if (typeof value !== "object" || value === null) {
+    return undefined;
+  }
+
+  const record = value as Record<string, unknown>;
+  const field = record[key];
+  return typeof field === "number" && Number.isFinite(field) ? field : undefined;
+}
+
 function readFirstStringField(value: unknown, keys: string[]): string | undefined {
   for (const key of keys) {
     const field = readOptionalStringField(value, key);
@@ -42,12 +52,17 @@ function readFirstStringField(value: unknown, keys: string[]): string | undefine
   return undefined;
 }
 
-function isCodeMode(mode: string): boolean {
-  return mode === "coder" || mode === "task";
+let _codeModes: Set<string> | undefined;
+
+function getCodeModesSet(): Set<string> {
+  if (_codeModes === undefined) {
+    _codeModes = getCodeModes();
+  }
+  return _codeModes;
 }
 
 function buildToolHeuristic(mode: string): number {
-  return isCodeMode(mode) ? 1 : 0;
+  return getCodeModesSet().has(mode) ? 1 : 0;
 }
 
 function handleCompaction(properties: Event["properties"]): void {
@@ -108,6 +123,14 @@ export function createPipelineHooks(_input: PluginInput): Partial<Hooks> {
         toolCallCount: tools,
       });
 
+      const authoritativeTotal = readOptionalNumberField(message.tokens, "total");
+      const fallbackTotal =
+        message.tokens.input +
+        message.tokens.output +
+        message.tokens.reasoning +
+        message.tokens.cache.read +
+        message.tokens.cache.write;
+
       recordEvent({
         key: message.id,
         ts: message.time.completed ?? message.time.created,
@@ -129,6 +152,7 @@ export function createPipelineHooks(_input: PluginInput): Partial<Hooks> {
         code: breakdown.code,
         tools,
         cost: message.cost,
+        total: authoritativeTotal ?? fallbackTotal,
       });
 
       setCurrentSessionId(message.sessionID);
