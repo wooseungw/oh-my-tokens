@@ -150,7 +150,7 @@ function getDailyUsed(resetHour: number | undefined, tz: string | undefined): nu
     resetHour !== undefined && Number.isInteger(resetHour) && resetHour >= 1 && resetHour <= 23;
   if (validHour) {
     const row = queryOne<TokenSumRow>(
-      "SELECT CAST(SUM(inp + out + think + cache_r + cache_w) AS INTEGER) AS tokens FROM events WHERE ts >= ?",
+      "SELECT CAST(SUM(total) AS INTEGER) AS tokens FROM events WHERE ts >= ?",
       todayAtHourMs(resetHour as number, tz),
     );
     return row?.tokens ?? 0;

@@ -20,6 +20,7 @@ function createRow(overrides: Partial<RollupRow>): RollupRow {
     cache_w: 2,
     cost: 0.3,
     count: 1,
+    total: 177,
     ...overrides,
   };
 }
@@ -35,6 +36,7 @@ describe("analytics aggregator", () => {
         cache_r: 5,
         cache_w: 2,
         cost: 0.3,
+        total: 177,
       }),
       createRow({
         name: "anthropic",
@@ -44,8 +46,18 @@ describe("analytics aggregator", () => {
         cache_r: 3,
         cache_w: 1,
         cost: 0.1,
+        total: 59,
       }),
-      createRow({ name: "openai", inp: 70, out: 20, think: 8, cache_r: 2, cache_w: 0, cost: 0.2 }),
+      createRow({
+        name: "openai",
+        inp: 70,
+        out: 20,
+        think: 8,
+        cache_r: 2,
+        cache_w: 0,
+        cost: 0.2,
+        total: 100,
+      }),
     ]);
 
     expect(aggregated.get("anthropic")).toEqual({
@@ -58,6 +70,7 @@ describe("analytics aggregator", () => {
       cache_w: 3,
       cost: 0.4,
       count: 2,
+      total: 236,
       totalTokens: 236,
     });
     expect(aggregated.get("openai")?.totalTokens).toBe(100);
@@ -73,6 +86,7 @@ describe("analytics aggregator", () => {
         think: 40,
         cache_r: 10,
         cache_w: 4,
+        total: 334,
       }),
       createRow({
         kind: "agent",
@@ -82,6 +96,7 @@ describe("analytics aggregator", () => {
         think: 5,
         cache_r: 1,
         cache_w: 0,
+        total: 36,
       }),
       createRow({
         kind: "agent",
@@ -91,6 +106,7 @@ describe("analytics aggregator", () => {
         think: 4,
         cache_r: 0,
         cache_w: 0,
+        total: 49,
       }),
     ]);
 
@@ -99,6 +115,7 @@ describe("analytics aggregator", () => {
       out: 90,
       think: 45,
       count: 2,
+      total: 370,
       totalTokens: 370,
     });
     expect(aggregated.get("planner")).toMatchObject({ totalTokens: 49 });
@@ -106,9 +123,33 @@ describe("analytics aggregator", () => {
 
   it("aggregates rows by date", () => {
     const aggregated = aggregateByDate([
-      createRow({ date: "2026-03-10", inp: 100, out: 20, think: 10, cache_r: 5, cache_w: 0 }),
-      createRow({ date: "2026-03-10", inp: 50, out: 10, think: 5, cache_r: 2, cache_w: 1 }),
-      createRow({ date: "2026-03-11", inp: 80, out: 30, think: 8, cache_r: 4, cache_w: 2 }),
+      createRow({
+        date: "2026-03-10",
+        inp: 100,
+        out: 20,
+        think: 10,
+        cache_r: 5,
+        cache_w: 0,
+        total: 135,
+      }),
+      createRow({
+        date: "2026-03-10",
+        inp: 50,
+        out: 10,
+        think: 5,
+        cache_r: 2,
+        cache_w: 1,
+        total: 68,
+      }),
+      createRow({
+        date: "2026-03-11",
+        inp: 80,
+        out: 30,
+        think: 8,
+        cache_r: 4,
+        cache_w: 2,
+        total: 124,
+      }),
     ]);
 
     expect(aggregated.get("2026-03-10")).toMatchObject({
@@ -118,6 +159,7 @@ describe("analytics aggregator", () => {
       cache_r: 7,
       cache_w: 1,
       count: 2,
+      total: 203,
       totalTokens: 203,
     });
     expect(aggregated.get("2026-03-11")).toMatchObject({ totalTokens: 124 });

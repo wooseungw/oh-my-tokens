@@ -28,7 +28,15 @@ function emptyUsage(): AggregatedUsage {
   };
 }
 
-function totalTokens(usage: Omit<AggregatedUsage, "totalTokens">): number {
+function totalTokens(usage: {
+  total: number;
+  inp: number;
+  out: number;
+  think: number;
+  cache_r: number;
+  cache_w: number;
+}): number {
+  if (usage.total > 0) return usage.total;
   return usage.inp + usage.out + usage.think + usage.cache_r + usage.cache_w;
 }
 
@@ -50,6 +58,7 @@ function aggregateByKey(
       cache_r: current.cache_r + row.cache_r,
       cache_w: current.cache_w + row.cache_w,
       cost: current.cost + row.cost,
+      total: (current.totalTokens > 0 ? current.totalTokens : 0) + row.total,
       count: current.count + row.count,
     };
 
