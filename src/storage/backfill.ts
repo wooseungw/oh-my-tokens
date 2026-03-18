@@ -133,6 +133,22 @@ function readBackfillRows(db: BunDatabase, latestTs: number): OpenCodeMessageRow
     .all(latestTs) as OpenCodeMessageRow[];
 }
 
+function safeTokens(tokens: ParsedMessagePayload["tokens"]) {
+  const inp = tokens?.input ?? 0;
+  const out = tokens?.output ?? 0;
+  const reasoning = tokens?.reasoning ?? 0;
+  const cache_r = tokens?.cache?.read ?? 0;
+  const cache_w = tokens?.cache?.write ?? 0;
+  return {
+    inp,
+    out,
+    reasoning,
+    cache_r,
+    cache_w,
+    total: inp + out + reasoning + cache_r + cache_w,
+  };
+}
+
 function recoverRow(row: OpenCodeMessageRow): boolean {
   const payload = parsePayload(row.data);
   if (payload === null || payload.role !== "assistant") {
@@ -140,13 +156,10 @@ function recoverRow(row: OpenCodeMessageRow): boolean {
   }
 
   const model = payload.modelID ?? "unknown";
-  const tokens = payload.tokens;
+  const tok = safeTokens(payload.tokens);
   const toolCount = toolHeuristic(payload.mode);
   const breakdown = classify({
-    tokens: {
-      output: tokens?.output ?? 0,
-      reasoning: tokens?.reasoning ?? 0,
-    },
+    tokens: { output: tok.out, reasoning: tok.reasoning },
     toolCallCount: toolCount,
   });
 
@@ -159,22 +172,17 @@ function recoverRow(row: OpenCodeMessageRow): boolean {
     agent: payload.mode,
     initiator: payload.mode,
     depth: 0,
-    inp: tokens?.input ?? 0,
-    out: tokens?.output ?? 0,
-    reasoning: tokens?.reasoning ?? 0,
-    cache_r: tokens?.cache?.read ?? 0,
-    cache_w: tokens?.cache?.write ?? 0,
+    inp: tok.inp,
+    out: tok.out,
+    reasoning: tok.reasoning,
+    cache_r: tok.cache_r,
+    cache_w: tok.cache_w,
     think: breakdown.think,
     chat: breakdown.chat,
     code: breakdown.code,
     tools: toolCount,
     cost: payload.cost ?? 0,
-    total:
-      (tokens?.input ?? 0) +
-      (tokens?.output ?? 0) +
-      (tokens?.reasoning ?? 0) +
-      (tokens?.cache?.read ?? 0) +
-      (tokens?.cache?.write ?? 0),
+    total: tok.total,
   });
 
   return true;

@@ -141,7 +141,7 @@ describeIf("storage integration", () => {
     expect(tables.map((table) => table.name)).toEqual(
       expect.arrayContaining(["events", "rollups", "sessions", "state"]),
     );
-    expect(schemaVersion?.value).toBe("1");
+    expect(schemaVersion?.value).toBe("2");
   });
 
   it("records an event and returns matching today rollups", () => {
@@ -166,6 +166,7 @@ describeIf("storage integration", () => {
       code: 50,
       tools: 1,
       cost: 0.125,
+      total: 182,
     });
 
     expect(getTodayRollups()).toEqual([
@@ -181,6 +182,7 @@ describeIf("storage integration", () => {
         cache_r: 5,
         cache_w: 2,
         cost: 0.125,
+        total: 182,
         count: 1,
       },
       {
@@ -195,6 +197,7 @@ describeIf("storage integration", () => {
         cache_r: 5,
         cache_w: 2,
         cost: 0.125,
+        total: 182,
         count: 1,
       },
       {
@@ -209,6 +212,7 @@ describeIf("storage integration", () => {
         cache_r: 5,
         cache_w: 2,
         cost: 0.125,
+        total: 182,
         count: 1,
       },
     ]);
