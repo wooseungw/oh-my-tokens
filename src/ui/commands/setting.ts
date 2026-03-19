@@ -131,10 +131,14 @@ export function applyOhMyTokensSetting(
 ): { ok: boolean; oldValue?: SettingValue; error?: string } {
   const { configPath, key, value } = normalizeSettingArgs(first, second, third);
   let cfg: Record<string, unknown> = {};
-  if (existsSync(configPath)) {
-    try {
-      cfg = JSON.parse(readFileSync(configPath, "utf8")) as Record<string, unknown>;
-    } catch {
+  try {
+    cfg = JSON.parse(readFileSync(configPath, "utf8")) as Record<string, unknown>;
+  } catch (err: unknown) {
+    const code =
+      typeof err === "object" && err !== null && "code" in err
+        ? (err as { code: string }).code
+        : undefined;
+    if (code !== "ENOENT") {
       return { ok: false, error: "Could not parse oh-my-tokens.json" };
     }
   }

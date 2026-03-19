@@ -42,8 +42,10 @@ function getOhMyTokensConfigPath(opencodeConfigPath) {
 }
 
 function migrateFromOpencodeJson(opencodeConfigPath, omtConfigPath) {
-  if (existsSync(omtConfigPath)) return;
-  if (!existsSync(opencodeConfigPath)) return;
+  try {
+    readFileSync(omtConfigPath);
+    return;
+  } catch {}
   let config;
   try {
     config = JSON.parse(readFileSync(opencodeConfigPath, "utf8"));
@@ -60,13 +62,13 @@ function registerPlugin() {
   const configPath = getConfigPath();
   const configDir = dirname(configPath);
 
-  if (!existsSync(configDir)) mkdirSync(configDir, { recursive: true });
+  mkdirSync(configDir, { recursive: true });
 
   let config = {};
-  if (existsSync(configPath)) {
-    try {
-      config = JSON.parse(readFileSync(configPath, "utf8"));
-    } catch {
+  try {
+    config = JSON.parse(readFileSync(configPath, "utf8"));
+  } catch (err) {
+    if (err?.code !== "ENOENT") {
       console.warn(`[oh-my-tokens] Could not parse ${configPath}, skipping auto-registration.`);
       return;
     }
@@ -89,14 +91,15 @@ function registerPlugin() {
 
   const omtConfigPath = getOhMyTokensConfigPath(configPath);
   migrateFromOpencodeJson(configPath, omtConfigPath);
-  if (!existsSync(omtConfigPath)) {
+  try {
+    readFileSync(omtConfigPath);
+    console.log(`[oh-my-tokens] Config already exists: ${omtConfigPath}`);
+  } catch {
     const omtConfig = { enrichment: "auto" };
     const tz = detectTimezone();
     if (tz) omtConfig.budget = { timezone: tz };
     writeFileSync(omtConfigPath, `${JSON.stringify(omtConfig, null, 2)}\n`, "utf8");
     console.log(`[oh-my-tokens] ✓ created ${omtConfigPath}`);
-  } else {
-    console.log(`[oh-my-tokens] Config already exists: ${omtConfigPath}`);
   }
 }
 
