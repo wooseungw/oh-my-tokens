@@ -13,7 +13,7 @@ The plugin runs on Bun in OpenCode, but development uses Node.js for compatibili
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/<owner>/oh-my-tokens.git
+   git clone https://github.com/wooseungw/oh-my-tokens.git
    cd oh-my-tokens
    ```
 
