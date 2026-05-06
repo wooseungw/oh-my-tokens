@@ -89,19 +89,83 @@ export function getUnitSetting(): "tokens" | "cost" {
   return cfg.unit === "cost" ? "cost" : "tokens";
 }
 
-export function getToastConfig(): { enabled: boolean; durationMs: number } {
+export type ToastSummaryScope = "off" | "total" | "session";
+
+export function getToastConfig(): {
+  enabled: boolean;
+  durationMs: number;
+  summary: ToastSummaryScope;
+} {
   const cfg = readPluginConfigFromFile(findOpencodeConfigPath());
   const toast = cfg.toast;
-  const enabled = !(
-    typeof toast === "object" &&
-    toast !== null &&
-    (toast as Record<string, unknown>).enabled === false
-  );
-  const durationMs =
-    typeof toast === "object" &&
-    toast !== null &&
-    typeof (toast as Record<string, unknown>).durationMs === "number"
-      ? ((toast as Record<string, unknown>).durationMs as number)
-      : 9000;
-  return { enabled, durationMs };
+  const toastRecord =
+    typeof toast === "object" && toast !== null ? (toast as Record<string, unknown>) : undefined;
+  const enabled = !(toastRecord?.enabled === false);
+  const durationMs = typeof toastRecord?.durationMs === "number" ? toastRecord.durationMs : 9000;
+  const rawSummary = toastRecord?.summary;
+  const summary: ToastSummaryScope =
+    rawSummary === "off" || rawSummary === "session" ? rawSummary : "total";
+  return { enabled, durationMs, summary };
+}
+
+export function getDisplaySetting(): "compact" | "normal" | "extend" | "text" {
+  const cfg = readPluginConfigFromFile(findOpencodeConfigPath());
+  const display = cfg.display;
+  if (display === "compact" || display === "normal" || display === "extend" || display === "text") {
+    return display;
+  }
+  return "normal";
+}
+
+export type ProviderVerifyMode = "off" | "sample" | "all";
+
+export interface PerProviderConfig {
+  enrichment: boolean;
+  verify: ProviderVerifyMode;
+}
+
+const DEFAULT_PER_PROVIDER: PerProviderConfig = {
+  enrichment: true,
+  verify: "off",
+};
+
+function normalizeVerifyMode(value: unknown): ProviderVerifyMode {
+  if (value === "off" || value === "sample" || value === "all") return value;
+  return DEFAULT_PER_PROVIDER.verify;
+}
+
+function readPerProviderConfig(entry: unknown): PerProviderConfig {
+  if (!isRecord(entry)) return { ...DEFAULT_PER_PROVIDER };
+  const enrichment = entry.enrichment !== false;
+  const verify = normalizeVerifyMode(entry.verify);
+  return { enrichment, verify };
+}
+
+export function extractPerProviderConfig(
+  raw: Record<string, unknown>,
+  providerID: string,
+): PerProviderConfig {
+  const providers = raw.providers;
+  if (!isRecord(providers)) return { ...DEFAULT_PER_PROVIDER };
+  return readPerProviderConfig(providers[providerID]);
+}
+
+export function extractAllProviderConfigs(
+  raw: Record<string, unknown>,
+): Record<string, PerProviderConfig> {
+  const providers = raw.providers;
+  if (!isRecord(providers)) return {};
+  const result: Record<string, PerProviderConfig> = {};
+  for (const [id, entry] of Object.entries(providers)) {
+    result[id] = readPerProviderConfig(entry);
+  }
+  return result;
+}
+
+export function getPerProviderConfig(providerID: string): PerProviderConfig {
+  return extractPerProviderConfig(readPluginConfigFromFile(findOpencodeConfigPath()), providerID);
+}
+
+export function getAllProviderConfigs(): Record<string, PerProviderConfig> {
+  return extractAllProviderConfigs(readPluginConfigFromFile(findOpencodeConfigPath()));
 }
