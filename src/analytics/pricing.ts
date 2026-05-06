@@ -1,15 +1,37 @@
+import { getBundledFallbackCatalog, getCachedCatalog } from "./pricing-catalog";
+
 const providerAliases = new Map<string, string>([
-  ["copilot", "openai"],
-  ["github-copilot", "openai"],
-  ["copilot-chat", "openai"],
-  ["vertexai", "google"],
+  ["github-copilot", "github-copilot"],
+  ["copilot-chat", "github-copilot"],
+  ["copilot", "github-copilot"],
+  ["vertexai", "google-vertex"],
 ]);
 
-const standardProviders = new Set(["anthropic", "openai", "google", "groq", "xai", "local"]);
+const standardProviders = new Set([
+  "anthropic",
+  "openai",
+  "google",
+  "google-vertex",
+  "groq",
+  "xai",
+  "openrouter",
+  "deepseek",
+  "mistral",
+  "perplexity",
+  "github-copilot",
+  "amazon-bedrock",
+  "azure",
+  "vercel",
+  "ollama",
+  "lmstudio",
+  "local",
+]);
 
 export interface ModelPricing {
   inputPer1M: number;
   outputPer1M: number;
+  cacheReadPer1M?: number;
+  cacheWritePer1M?: number;
 }
 
 export const MODEL_PRICING: Record<string, ModelPricing> = {
@@ -86,17 +108,26 @@ export function normalizePricingProvider(providerID: string, modelID: string): s
   return normalizedProvider.length > 0 ? normalizedProvider : "unknown";
 }
 
-export function lookupPricing(modelID: string): ModelPricing | null {
-  const normalizedModelID = modelID.trim().toLowerCase();
+function toModelPricing(
+  entry: { input?: number; output?: number; cache_read?: number; cache_write?: number } | undefined,
+): ModelPricing | null {
+  if (entry === undefined) return null;
+  if (entry.input === undefined || entry.output === undefined) return null;
+  const pricing: ModelPricing = {
+    inputPer1M: entry.input,
+    outputPer1M: entry.output,
+  };
+  if (entry.cache_read !== undefined) pricing.cacheReadPer1M = entry.cache_read;
+  if (entry.cache_write !== undefined) pricing.cacheWritePer1M = entry.cache_write;
+  return pricing;
+}
 
-  if (normalizedModelID.length === 0) {
-    return null;
-  }
+function lookupFromStaticTable(modelID: string): ModelPricing | null {
+  const normalizedModelID = modelID.trim().toLowerCase();
+  if (normalizedModelID.length === 0) return null;
 
   const exact = MODEL_PRICING[normalizedModelID];
-  if (exact !== undefined) {
-    return exact;
-  }
+  if (exact !== undefined) return exact;
 
   const candidates = Object.entries(MODEL_PRICING).sort(
     ([leftModelID], [rightModelID]) => rightModelID.length - leftModelID.length,
@@ -111,19 +142,82 @@ export function lookupPricing(modelID: string): ModelPricing | null {
   return null;
 }
 
+function lookupFromCatalog(providerID: string | undefined, modelID: string): ModelPricing | null {
+  const catalog = getCachedCatalog() ?? getBundledFallbackCatalog();
+  if (catalog === null) return null;
+
+  const normalizedModelID = modelID.trim();
+  if (normalizedModelID.length === 0) return null;
+
+  if (providerID !== undefined) {
+    const provider = catalog.providers[providerID];
+    if (provider !== undefined) {
+      const direct = provider.models[normalizedModelID];
+      const pricing = toModelPricing(direct);
+      if (pricing !== null) return pricing;
+
+      const lowered = normalizedModelID.toLowerCase();
+      for (const [id, entry] of Object.entries(provider.models)) {
+        if (id.toLowerCase() === lowered) {
+          const match = toModelPricing(entry);
+          if (match !== null) return match;
+        }
+      }
+    }
+  }
+
+  for (const provider of Object.values(catalog.providers)) {
+    const direct = provider.models[normalizedModelID];
+    const pricing = toModelPricing(direct);
+    if (pricing !== null) return pricing;
+  }
+
+  const lowered = normalizedModelID.toLowerCase();
+  for (const provider of Object.values(catalog.providers)) {
+    for (const [id, entry] of Object.entries(provider.models)) {
+      if (id.toLowerCase() === lowered) {
+        const match = toModelPricing(entry);
+        if (match !== null) return match;
+      }
+    }
+  }
+
+  return null;
+}
+
+export function lookupPricing(modelID: string, providerID?: string): ModelPricing | null {
+  const staticMatch = lookupFromStaticTable(modelID);
+  if (staticMatch !== null) return staticMatch;
+  return lookupFromCatalog(providerID, modelID);
+}
+
+export interface CostInputs {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens?: number;
+  cacheWriteTokens?: number;
+}
+
 export function estimateCost(
   modelID: string,
   inputTokens: number,
   outputTokens: number,
+  cacheReadTokens = 0,
+  cacheWriteTokens = 0,
+  providerID?: string,
 ): number | null {
-  const pricing = lookupPricing(modelID);
+  const pricing = lookupPricing(modelID, providerID);
+  if (pricing === null) return null;
 
-  if (pricing === null) {
-    return null;
-  }
+  const cacheReadRate = pricing.cacheReadPer1M ?? pricing.inputPer1M;
+  const cacheWriteRate = pricing.cacheWritePer1M ?? pricing.inputPer1M;
+
+  const regularInputTokens = Math.max(0, inputTokens - cacheReadTokens);
 
   return (
-    inputTokens * (pricing.inputPer1M / 1_000_000) +
-    outputTokens * (pricing.outputPer1M / 1_000_000)
+    (regularInputTokens * pricing.inputPer1M) / 1_000_000 +
+    (cacheReadTokens * cacheReadRate) / 1_000_000 +
+    (cacheWriteTokens * cacheWriteRate) / 1_000_000 +
+    (outputTokens * pricing.outputPer1M) / 1_000_000
   );
 }
