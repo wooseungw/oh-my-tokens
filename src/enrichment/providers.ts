@@ -1,6 +1,5 @@
 import { type AuthEntry, readAuthJson, readAuthToken } from "./auth";
 import {
-  isRecord,
   parseUsageBody,
   readFiniteNumber,
   safeFetch,
@@ -73,28 +72,6 @@ function clampPercent(value: number): number {
   return Math.max(0, Math.min(100, value));
 }
 
-function resetIsoFromNowSeconds(seconds: number): string | undefined {
-  if (!Number.isFinite(seconds) || seconds <= 0) return undefined;
-  return new Date(Date.now() + Math.round(seconds * 1000)).toISOString();
-}
-
-function resetIsoFromTimestamp(resetAt?: number): string | undefined {
-  if (!Number.isFinite(resetAt) || !resetAt) return undefined;
-  return new Date(Math.round(resetAt * 1000)).toISOString();
-}
-
-function decodeJwtPayload(token: string): Record<string, unknown> | null {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-    const base64 = (parts[1] ?? "").replace(/-/g, "+").replace(/_/g, "/");
-    const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
-    return JSON.parse(Buffer.from(padded, "base64").toString("utf-8")) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-}
-
 const COPILOT_FALLBACK_LIMITS = {
   free: 50,
   pro: 300,
@@ -103,55 +80,10 @@ const COPILOT_FALLBACK_LIMITS = {
   enterprise: 1000,
 } as const;
 
-async function fetchAnthropicOAuthQuota(token: string): Promise<ProviderQuota | null> {
-  const data = (await safeFetch("https://api.anthropic.com/api/oauth/usage", {
-    headers: { Authorization: `Bearer ${token}`, "anthropic-beta": "oauth-2025-04-20" },
-  })) as {
-    five_hour?: { utilization?: number; resets_at?: string };
-    seven_day?: { utilization?: number; resets_at?: string };
-  } | null;
-  if (data === null) {
-    return null;
-  }
-
-  const fiveHourUtil = data.five_hour?.utilization;
-  const sevenDayUtil = data.seven_day?.utilization;
-  if (fiveHourUtil === undefined && sevenDayUtil === undefined) return null;
-  return {
-    provider: "anthropic",
-    used: 0,
-    limit: 0,
-    unit: "tokens",
-    windows: {
-      ...(fiveHourUtil !== undefined && {
-        fiveHour: {
-          percentRemaining: clampPercent(100 - fiveHourUtil),
-          ...(data.five_hour?.resets_at !== undefined && {
-            resetTimeIso: data.five_hour.resets_at,
-          }),
-        },
-      }),
-      ...(sevenDayUtil !== undefined && {
-        sevenDay: {
-          percentRemaining: clampPercent(100 - sevenDayUtil),
-          ...(data.seven_day?.resets_at !== undefined && {
-            resetTimeIso: data.seven_day.resets_at,
-          }),
-        },
-      }),
-    },
-  };
-}
-
 export async function fetchAnthropicQuota(authToken: string): Promise<ProviderQuota | null> {
   const auth = readAuthJson();
   const entry = auth?.anthropic;
   const storedToken = readAuthToken("anthropic");
-
-  if (entry?.type === "oauth" && storedToken) {
-    const result = await fetchAnthropicOAuthQuota(storedToken);
-    if (result !== null) return result;
-  }
 
   const apiKey = (entry?.type === "api" ? storedToken : undefined) ?? authToken;
   if (!apiKey) return null;
@@ -179,71 +111,10 @@ export async function fetchAnthropicQuota(authToken: string): Promise<ProviderQu
   }
 }
 
-async function fetchOpenAIOAuthQuota(token: string): Promise<ProviderQuota | null> {
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${token}`,
-    "User-Agent": "oh-my-tokens/1.0",
-  };
-  const payload = decodeJwtPayload(token);
-  if (isRecord(payload?.["https://api.openai.com/auth"])) {
-    const authClaim = payload["https://api.openai.com/auth"] as Record<string, unknown>;
-    if (typeof authClaim.chatgpt_account_id === "string") {
-      headers["ChatGPT-Account-Id"] = authClaim.chatgpt_account_id;
-    }
-  }
-
-  const data = (await safeFetch("https://chatgpt.com/backend-api/wham/usage", { headers })) as {
-    plan_type?: string;
-    rate_limit?: {
-      primary_window?: { used_percent: number; reset_after_seconds: number; reset_at?: number };
-      secondary_window?: {
-        used_percent: number;
-        reset_after_seconds: number;
-        reset_at?: number;
-      } | null;
-    } | null;
-  } | null;
-  if (data === null) {
-    return null;
-  }
-
-  const primary = data.rate_limit?.primary_window;
-  if (!primary) return null;
-  const secondary = data.rate_limit?.secondary_window ?? null;
-  return {
-    provider: "openai",
-    used: 0,
-    limit: 0,
-    unit: "tokens",
-    planLabel: data.plan_type,
-    windows: {
-      hourly: {
-        percentRemaining: clampPercent(100 - primary.used_percent),
-        resetTimeIso:
-          resetIsoFromTimestamp(primary.reset_at) ??
-          resetIsoFromNowSeconds(primary.reset_after_seconds),
-      },
-      ...(secondary && {
-        weekly: {
-          percentRemaining: clampPercent(100 - secondary.used_percent),
-          resetTimeIso:
-            resetIsoFromTimestamp(secondary.reset_at) ??
-            resetIsoFromNowSeconds(secondary.reset_after_seconds),
-        },
-      }),
-    },
-  };
-}
-
 export async function fetchOpenAIQuota(authToken: string): Promise<ProviderQuota | null> {
   const auth = readAuthJson();
   const entry = auth?.openai;
   const storedToken = readAuthToken("openai");
-
-  if (entry?.type === "oauth" && storedToken) {
-    const result = await fetchOpenAIOAuthQuota(storedToken);
-    if (result !== null) return result;
-  }
 
   const apiKey = (entry?.type === "api" ? storedToken : undefined) ?? authToken;
   if (!apiKey) return null;
@@ -402,6 +273,7 @@ export async function fetchOpenRouterQuota(authToken: string): Promise<ProviderQ
     },
   };
 }
+
 export const ENRICHMENT_PROVIDERS: Record<
   string,
   (token: string) => Promise<ProviderQuota | null>

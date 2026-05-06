@@ -80,6 +80,7 @@ function buildSettingDisplay(): string {
     row("budget.weeklyResetDay", budget.weeklyResetDay, "monday | tuesday | ... | sunday"),
     row("toast.enabled", toast.enabled, "true | false"),
     row("toast.durationMs", toast.durationMs, "<number> (ms)"),
+    row("toast.summary", toast.summary, "off | total | session"),
     "Set:  /omt setting <key> <value>",
   ];
   const width = maxContentWidth(title, ...contentLines);
@@ -91,9 +92,9 @@ function buildSettingDisplay(): string {
     buildSectionDivider("Budget", width),
     ...contentLines.slice(6, 12),
     buildSectionDivider("Toast", width),
-    ...contentLines.slice(12, 14),
+    ...contentLines.slice(12, 15),
     "",
-    contentLines[14],
+    contentLines[15],
     rule,
   ].join("\n");
 }
@@ -199,6 +200,7 @@ export const SETTING_SPECS: Readonly<Record<string, SettingSpec>> = {
   },
   "toast.enabled": { type: "boolean" },
   "toast.durationMs": { type: "positive-integer", hint: "ms", example: "9000" },
+  "toast.summary": { type: "enum", values: ["off", "total", "session"] },
 };
 
 function specHint(spec: SettingSpec): string {

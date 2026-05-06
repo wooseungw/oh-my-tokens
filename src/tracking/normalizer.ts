@@ -1,10 +1,31 @@
 const providerAliases = new Map<string, string>([
   ["github-copilot", "copilot"],
   ["copilot-chat", "copilot"],
+  ["github-copilot-chat", "copilot"],
   ["vertexai", "google"],
+  ["google-vertex", "google"],
+  ["bedrock", "amazon-bedrock"],
+  ["aws-bedrock", "amazon-bedrock"],
 ]);
 
-const standardProviders = new Set(["anthropic", "openai", "google", "groq", "xai", "local"]);
+const standardProviders = new Set([
+  "anthropic",
+  "openai",
+  "google",
+  "groq",
+  "xai",
+  "openrouter",
+  "deepseek",
+  "mistral",
+  "perplexity",
+  "copilot",
+  "amazon-bedrock",
+  "azure",
+  "vercel",
+  "ollama",
+  "lmstudio",
+  "local",
+]);
 
 function inferProviderFromModel(modelID: string | undefined): string | null {
   if (modelID === undefined) {
@@ -50,6 +71,17 @@ export function normalizeDisplayProvider(
   modelID: string | undefined,
 ): string {
   const normalizedProvider = providerID?.trim().toLowerCase();
+
+  // When the model ID carries an explicit `upstream-provider/model-name` prefix, prefer the
+  // upstream provider for display (e.g. openrouter → google/gemini-2.5-pro displays as
+  // "google", since the underlying model origin is the more useful rollup key).
+  const modelPrefixed = modelID?.trim().toLowerCase().includes("/") === true;
+  if (modelPrefixed) {
+    const inferredFromPrefix = inferProviderFromModel(modelID);
+    if (inferredFromPrefix !== null) {
+      return inferredFromPrefix;
+    }
+  }
 
   if (normalizedProvider !== undefined && normalizedProvider.length > 0) {
     const alias = providerAliases.get(normalizedProvider);

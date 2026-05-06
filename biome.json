@@ -36,6 +36,7 @@
       "!**/opencode-quota",
       "!**/*.min.json",
       "!.sisyphus",
+      "!.omc",
       "!coverage"
     ]
   }

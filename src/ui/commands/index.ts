@@ -14,6 +14,7 @@ import { buildSessionsSummary } from "./sessions";
 import { buildSettingCommandOutput } from "./setting";
 import { buildTodaySummary } from "./today";
 import { buildTrendSummary } from "./trend";
+import { buildVerifyEmpty } from "./verify";
 
 interface ParsedCommand {
   subcommand: string;
@@ -70,6 +71,10 @@ function buildCommandText(
       return buildHoursSummary(mode);
     case "setting":
       return buildSettingCommandOutput(command.rawTail, applyConfig);
+    case "verify":
+      return buildVerifyEmpty();
+    case "refresh-pricing":
+      return "pricing catalog refresh queued. Run `npm run pricing:refresh` or wait for the next loadPricingCatalog({refresh:true}) tick.";
     default:
       return buildTodaySummary(getTodayRollups(), mode);
   }

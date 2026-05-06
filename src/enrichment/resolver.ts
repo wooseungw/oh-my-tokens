@@ -2,9 +2,9 @@ import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
 import { getDataDirCandidates } from "../paths";
+import { ALL_PROVIDERS, getProvider } from "../providers/registry";
 import { EnrichmentCache } from "./cache";
 import type { ProviderQuota } from "./providers";
-import { ENRICHMENT_PROVIDERS } from "./providers";
 
 export type EnrichmentMode = "off" | "auto" | "manual" | "opencode-quota";
 
@@ -62,39 +62,45 @@ function toManualQuota(
   };
 }
 
+function resolveEnvToken(authKeys: readonly string[]): string {
+  for (const key of authKeys) {
+    const value = process.env[key]?.trim();
+    if (value && value.length > 0) return value;
+  }
+  return "";
+}
+
 async function resolveAutoEnrichment(): Promise<EnrichmentResult[]> {
-  const envTokens: Record<string, string | undefined> = {
-    anthropic: process.env.ANTHROPIC_API_KEY,
-    openai: process.env.OPENAI_API_KEY,
-    copilot: process.env.GITHUB_TOKEN,
-    gemini: process.env.GEMINI_API_KEY,
-    openrouter: process.env.OPENROUTER_API_KEY,
-  };
-  const tasks = Object.keys(ENRICHMENT_PROVIDERS).map(
-    async (provider): Promise<EnrichmentResult | null> => {
-      const fetchFn = ENRICHMENT_PROVIDERS[provider];
-      if (!fetchFn) return null;
-
-      const cacheKey = provider;
-      const cachedQuota = quotaCache.get(cacheKey);
-      if (cachedQuota !== null) {
-        return { provider, quota: cachedQuota, source: "auto" };
-      }
-
-      const envToken = envTokens[provider] ?? "";
-      const quota = await fetchFn(envToken);
-      if (quota !== null && quota !== undefined) {
-        quotaCache.set(cacheKey, quota);
-      }
-
-      return { provider, quota: quota ?? null, source: "auto" };
-    },
+  const candidates = Object.values(ALL_PROVIDERS).filter(
+    (spec) => typeof spec.fetchQuota === "function",
   );
+  const tasks = candidates.map(async (spec): Promise<EnrichmentResult | null> => {
+    const provider = spec.id;
+    const cacheKey = provider;
+    const cachedQuota = quotaCache.get(cacheKey);
+    if (cachedQuota !== null) {
+      return { provider, quota: cachedQuota, source: "auto" };
+    }
+
+    const envToken = resolveEnvToken(spec.authKeys);
+    const fetchFn = spec.fetchQuota;
+    if (fetchFn === undefined) return null;
+    const quota = await fetchFn(envToken);
+    if (quota !== null && quota !== undefined) {
+      quotaCache.set(cacheKey, quota);
+    }
+
+    return { provider, quota: quota ?? null, source: "auto" };
+  });
 
   const results = await Promise.all(tasks);
   return results.filter(
     (result): result is EnrichmentResult => result !== null && result.quota !== null,
   );
+}
+
+export function resolveProviderAuthToken(providerID: string): string {
+  return resolveEnvToken(getProvider(providerID).authKeys);
 }
 
 function getOpencodeQuotaConfigCandidates(): string[] {

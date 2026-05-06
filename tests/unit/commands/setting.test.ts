@@ -93,4 +93,27 @@ describe("setting commands", () => {
     expect(result).toContain("unit");
     expect(result).not.toContain("lang");
   });
+
+  it("buildSettingCommandOutput accepts toast.summary enum values", () => {
+    const result = buildSettingCommandOutput("toast.summary session");
+
+    expect(result).toContain("✓ toast.summary");
+    expect(JSON.parse(readFileSync(configPath, "utf8"))).toEqual({
+      toast: { summary: "session" },
+    });
+  });
+
+  it("buildSettingCommandOutput rejects invalid toast.summary value", () => {
+    const result = buildSettingCommandOutput("toast.summary daily");
+
+    expect(result).toContain("✗");
+    expect(result).toContain("off | total | session");
+  });
+
+  it("buildSettingDisplay shows toast.summary row", () => {
+    const result = buildSettingCommandOutput("");
+
+    expect(result).toContain("toast.summary");
+    expect(result).toContain("off | total | session");
+  });
 });
