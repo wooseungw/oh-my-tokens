@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 
-const CURRENT_SCHEMA_VERSION = 2;
+const CURRENT_SCHEMA_VERSION = 3;
 
 function isStateRow(value: unknown): value is { value: string | null } {
   return typeof value === "object" && value !== null && "value" in value;
@@ -88,6 +88,26 @@ function applyVersionTwo(db: Database): void {
   db.exec("UPDATE rollups SET total = inp + out + think + cache_r + cache_w WHERE total = 0");
 }
 
+function applyVersionThree(db: Database): void {
+  db.exec(
+    "CREATE TABLE IF NOT EXISTS verifications (" +
+      "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+      "session_id TEXT NOT NULL, " +
+      "message_id TEXT NOT NULL, " +
+      "provider TEXT NOT NULL, " +
+      "recorded_cost REAL NOT NULL, " +
+      "actual_cost REAL, " +
+      "delta REAL, " +
+      "checked_at INTEGER NOT NULL, " +
+      "status TEXT NOT NULL, " +
+      "reason TEXT" +
+      ")",
+  );
+  db.exec("CREATE INDEX IF NOT EXISTS idx_verifications_session ON verifications(session_id)");
+  db.exec("CREATE INDEX IF NOT EXISTS idx_verifications_provider ON verifications(provider)");
+  db.exec("CREATE INDEX IF NOT EXISTS idx_verifications_checked_at ON verifications(checked_at)");
+}
+
 export function runMigrations(db: Database): void {
   const migrate = db.transaction(() => {
     db.exec(`
@@ -107,6 +127,11 @@ export function runMigrations(db: Database): void {
     if (version < 2) {
       applyVersionTwo(db);
       version = 2;
+    }
+
+    if (version < 3) {
+      applyVersionThree(db);
+      version = 3;
     }
 
     db.query(
