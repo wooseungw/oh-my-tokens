@@ -170,3 +170,42 @@ describe("resolveEnrichment", () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("resolveProviderAuthToken (registry-driven env resolution)", () => {
+  beforeEach(() => {
+    process.env = { ...originalEnv };
+  });
+
+  afterEach(() => {
+    process.env = { ...originalEnv };
+  });
+
+  it("resolves the token via ProviderSpec.authKeys for registered providers", async () => {
+    process.env.DEEPSEEK_API_KEY = "ds-live-key";
+    process.env.GROQ_API_KEY = "gq-live-key";
+    process.env.XAI_API_KEY = "xai-live-key";
+    process.env.MISTRAL_API_KEY = "mst-live-key";
+    process.env.PERPLEXITY_API_KEY = "pplx-live-key";
+
+    const { resolveProviderAuthToken } = await loadResolverModule();
+
+    expect(resolveProviderAuthToken("deepseek")).toBe("ds-live-key");
+    expect(resolveProviderAuthToken("groq")).toBe("gq-live-key");
+    expect(resolveProviderAuthToken("xai")).toBe("xai-live-key");
+    expect(resolveProviderAuthToken("mistral")).toBe("mst-live-key");
+    expect(resolveProviderAuthToken("perplexity")).toBe("pplx-live-key");
+  });
+
+  it("returns empty string when no matching env var is set (does not throw)", async () => {
+    delete process.env.DEEPSEEK_API_KEY;
+    const { resolveProviderAuthToken } = await loadResolverModule();
+    expect(resolveProviderAuthToken("deepseek")).toBe("");
+  });
+
+  it("resolves aliased provider ids through the registry", async () => {
+    process.env.GITHUB_TOKEN = "gh-tok";
+    const { resolveProviderAuthToken } = await loadResolverModule();
+    expect(resolveProviderAuthToken("copilot")).toBe("gh-tok");
+    expect(resolveProviderAuthToken("github-copilot")).toBe("gh-tok");
+  });
+});
