@@ -9,6 +9,9 @@
 
 ## Recent Updates
 
+- `feat` Multi-provider support: first-class specs for 16 OpenCode providers (anthropic, openai, github-copilot, google, openrouter, groq, xai, deepseek, mistral, perplexity, amazon-bedrock, azure, vercel, ollama, lmstudio, …) via a typed registry, plus cache-aware cost estimation backed by [models.dev](https://models.dev/api.json)
+- `feat` `/omt verify` — cross-check recorded cost against provider ground truth (OpenRouter `/generation/:id` is the gold standard); configurable per-provider verify cadence (`off|sample|all`) and `OMT_PRICING_OFFLINE=1` for offline-only mode. See [docs/verification.md](docs/verification.md).
+- `feat` Schema v3 migration adds a `verifications` table for delta tracking
 - `feat` v2 SDK support: authoritative `tokens.total` from OpenCode, configurable `codeModes`
 - `feat` Schema v2 migration with `total` column in events + rollups, backfill existing data
 - `fix` Fix hourly token double-counting, timezone mismatch, NaN crashes, safeFetch hangs

@@ -2,6 +2,7 @@ import { getBudgetConfig } from "../analytics/budget";
 import { getLiveProviders, getLiveQuota } from "../analytics/quota";
 import { computeTotalTokens } from "../analytics/token-math";
 import type { ProviderQuota } from "../enrichment/providers";
+import { getProvider } from "../providers/registry";
 import {
   getMonthProviderRollups,
   getMonthTotal,
@@ -54,23 +55,9 @@ interface QuotaWindowEntry {
   pct: number;
 }
 
-const TIER_MONTHLY_ESTIMATE: Readonly<Record<string, Readonly<Record<string, number>>>> = {
-  anthropic: {
-    free: 1_000_000,
-    tier_1: 10_000_000,
-    tier_2: 30_000_000,
-    tier_3: 80_000_000,
-    tier_4: 200_000_000,
-    scale: 500_000_000,
-  },
-  openai: {
-    tier_1: 10_000_000,
-    tier_2: 100_000_000,
-    tier_3: 300_000_000,
-    tier_4: 1_000_000_000,
-    tier_5: 5_000_000_000,
-  },
-} as const;
+function getTierMonthlyEstimate(provider: string, tier: string): number | undefined {
+  return getProvider(provider).tierMonthlyEstimate?.[tier];
+}
 let currentSessionId: string | null = null;
 let lastReply: ReplyState | null = null;
 
@@ -267,7 +254,7 @@ function tierToEntry(
   monthMap: Map<string, number>,
 ): QuotaWindowEntry | null {
   if (tier === undefined) return null;
-  const estimate = TIER_MONTHLY_ESTIMATE[provider]?.[tier];
+  const estimate = getTierMonthlyEstimate(provider, tier);
   if (estimate === undefined) return null;
   const monthUsed = monthMap.get(provider) ?? 0;
   const pct = Math.max(0, 100 - (monthUsed / estimate) * 100);
