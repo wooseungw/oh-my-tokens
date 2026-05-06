@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -75,7 +75,7 @@ describe("bundled fallback catalog", () => {
 });
 
 describe("loadPricingCatalog cache behavior", () => {
-  const tempHome = path.join(tmpdir(), `omt-cache-${process.pid}-${Date.now()}`);
+  let tempHome = "";
   const savedEnv: Record<string, string | undefined> = {};
 
   const saveEnv = (key: string) => {
@@ -90,7 +90,7 @@ describe("loadPricingCatalog cache behavior", () => {
     saveEnv("OMT_PRICING_OFFLINE");
     saveEnv("OMT_PRICING_URL");
     saveEnv("XDG_CACHE_HOME");
-    mkdirSync(tempHome, { recursive: true });
+    tempHome = mkdtempSync(path.join(tmpdir(), "omt-cache-"));
     process.env.XDG_CACHE_HOME = tempHome;
     resetPricingCatalogForTest();
   });
