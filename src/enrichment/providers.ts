@@ -273,3 +273,14 @@ export async function fetchOpenRouterQuota(authToken: string): Promise<ProviderQ
     },
   };
 }
+
+export const ENRICHMENT_PROVIDERS: Record<
+  string,
+  (token: string) => Promise<ProviderQuota | null>
+> = {
+  anthropic: fetchAnthropicQuota,
+  openai: fetchOpenAIQuota,
+  copilot: fetchCopilotQuota,
+  gemini: fetchGeminiQuota,
+  openrouter: fetchOpenRouterQuota,
+};
