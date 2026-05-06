@@ -126,7 +126,7 @@ describeIf("storage integration", () => {
     vi.useRealTimers();
   });
 
-  it("migrates an empty database to schema version 1", () => {
+  it("migrates an empty database to the current schema version", () => {
     runMigrations(getTestDb());
 
     const tables = getTestDb()
@@ -139,9 +139,9 @@ describeIf("storage integration", () => {
     } | null;
 
     expect(tables.map((table) => table.name)).toEqual(
-      expect.arrayContaining(["events", "rollups", "sessions", "state"]),
+      expect.arrayContaining(["events", "rollups", "sessions", "state", "verifications"]),
     );
-    expect(schemaVersion?.value).toBe("2");
+    expect(schemaVersion?.value).toBe("3");
   });
 
   it("records an event and returns matching today rollups", () => {
