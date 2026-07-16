@@ -111,8 +111,9 @@ describe("recordEvent", () => {
 
     getDbMock.mockReturnValue(db);
 
-    recordEvent(buildRecord());
+    const result = recordEvent(buildRecord());
 
+    expect(result).toBe(true);
     expect(runInTransactionMock).toHaveBeenCalledTimes(1);
     expect(eventRuns).toHaveLength(1);
     expect(rollupRuns).toHaveLength(3);
@@ -143,8 +144,9 @@ describe("recordEvent", () => {
 
     getDbMock.mockReturnValue(db);
 
-    recordEvent(buildRecord());
+    const result = recordEvent(buildRecord());
 
+    expect(result).toBe(true);
     expect(rollupRuns).toEqual([
       ["2026-03-12", "provider", "anthropic", 10, 10, 3, 0, 10, 2, 1, 0.12, 26, 0],
       ["2026-03-12", "agent", "builder", 10, 10, 3, 0, 10, 2, 1, 0.12, 26, 0],
@@ -172,8 +174,9 @@ describe("recordEvent", () => {
 
     getDbMock.mockReturnValue(db);
 
-    recordEvent(buildRecord());
+    const result = recordEvent(buildRecord());
 
+    expect(result).toBe(false);
     expect(rollupRuns).toHaveLength(0);
   });
 
@@ -197,7 +200,7 @@ describe("recordEvent", () => {
 
     getDbMock.mockReturnValue(db);
 
-    recordEvent(
+    const result = recordEvent(
       buildRecord({
         inp: 0,
         out: 0,
@@ -212,6 +215,7 @@ describe("recordEvent", () => {
       }),
     );
 
+    expect(result).toBe(true);
     expect(rollupRuns).toEqual([
       ["2026-03-12", "provider", "anthropic", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
       ["2026-03-12", "agent", "builder", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -239,7 +243,7 @@ describe("recordEvent", () => {
 
     getDbMock.mockReturnValue(db);
 
-    recordEvent(
+    const result = recordEvent(
       buildRecord({
         inp: 0,
         out: 0,
@@ -254,6 +258,7 @@ describe("recordEvent", () => {
       }),
     );
 
+    expect(result).toBe(true);
     expect(rollupRuns).toEqual([
       ["2026-03-12", "provider", "anthropic", 0, 0, 0, 0, 0, 500, 0, 0, 500, 0],
       ["2026-03-12", "agent", "builder", 0, 0, 0, 0, 0, 500, 0, 0, 500, 0],
