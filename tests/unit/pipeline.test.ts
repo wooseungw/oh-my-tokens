@@ -200,6 +200,7 @@ describe("createPipelineHooks", () => {
 
   it("shows toast with output-only total on completed messages", async () => {
     getToastConfigMock.mockReturnValue({ enabled: true, durationMs: 9000 });
+    recordEventMock.mockReturnValue(true);
     const hooks = createPipelineHooks({} as never);
 
     await hooks.event?.({
@@ -222,7 +223,7 @@ describe("createPipelineHooks", () => {
               reasoning: 12,
               cache: { read: 200, write: 50 },
             },
-            time: { created: 1000, completed: 1500 },
+            time: { created: Date.now() - 1000, completed: Date.now() },
           },
         },
       },
@@ -275,5 +276,75 @@ describe("createPipelineHooks", () => {
 
     expect(showToastMock).not.toHaveBeenCalled();
     expect(recordEventMock).toHaveBeenCalled();
+  });
+
+  it("skips toast for replayed messages (fork)", async () => {
+    getToastConfigMock.mockReturnValue({ enabled: true, durationMs: 9000 });
+    recordEventMock.mockReturnValue(false);
+    const hooks = createPipelineHooks({} as never);
+
+    await hooks.event?.({
+      event: {
+        type: "message.updated",
+        properties: {
+          info: {
+            id: "msg_replay",
+            sessionID: "ses_1",
+            role: "assistant",
+            parentID: "msg_0",
+            modelID: "claude-sonnet-4",
+            providerID: "anthropic",
+            mode: "coder",
+            path: { cwd: "/workspace", root: "/workspace" },
+            cost: 0.1,
+            tokens: {
+              input: 500,
+              output: 80,
+              reasoning: 12,
+              cache: { read: 200, write: 50 },
+            },
+            time: { created: 1000, completed: 1500 },
+          },
+        },
+      },
+    });
+
+    expect(recordEventMock).toHaveBeenCalled();
+    expect(showToastMock).not.toHaveBeenCalled();
+  });
+
+  it("skips toast for stale completions (fork with new message IDs)", async () => {
+    getToastConfigMock.mockReturnValue({ enabled: true, durationMs: 9000 });
+    recordEventMock.mockReturnValue(true);
+    const hooks = createPipelineHooks({} as never);
+
+    await hooks.event?.({
+      event: {
+        type: "message.updated",
+        properties: {
+          info: {
+            id: "msg_fork",
+            sessionID: "ses_fork",
+            role: "assistant",
+            parentID: "msg_0",
+            modelID: "claude-sonnet-4",
+            providerID: "anthropic",
+            mode: "coder",
+            path: { cwd: "/workspace", root: "/workspace" },
+            cost: 0.1,
+            tokens: {
+              input: 500,
+              output: 80,
+              reasoning: 12,
+              cache: { read: 200, write: 50 },
+            },
+            time: { created: 1000, completed: 2000 },
+          },
+        },
+      },
+    });
+
+    expect(recordEventMock).toHaveBeenCalled();
+    expect(showToastMock).not.toHaveBeenCalled();
   });
 });

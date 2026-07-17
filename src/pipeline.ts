@@ -164,7 +164,7 @@ function handleMessageUpdated(input: PluginInput, message: AssistantMessage): vo
     message.tokens.cache.read +
     message.tokens.cache.write;
 
-  recordEvent({
+  const changed = recordEvent({
     key: message.id,
     ts: message.time.completed ?? message.time.created,
     sid: message.sessionID,
@@ -199,7 +199,9 @@ function handleMessageUpdated(input: PluginInput, message: AssistantMessage): vo
   });
 
   const toastCfg = getToastConfig();
-  if (toastCfg.enabled && message.time.completed) {
+  const isFreshCompletion =
+    message.time.completed !== undefined && Date.now() - message.time.completed < 5_000;
+  if (toastCfg.enabled && message.time.completed && changed && isFreshCompletion) {
     const toastData = {
       think: breakdown.think,
       chat: breakdown.chat,

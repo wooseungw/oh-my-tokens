@@ -232,7 +232,8 @@ function applyRollupChanges(previous: EventSnapshot | null, current: EventSnapsh
   applyEventRollups(current, subtractSnapshots(current, previous));
 }
 
-export function recordEvent(record: EventRecord): void {
+export function recordEvent(record: EventRecord): boolean {
+  let changed = false;
   runInTransaction(() => {
     const db = getDb();
     const previous = readExistingSnapshot(record.key);
@@ -285,6 +286,8 @@ export function recordEvent(record: EventRecord): void {
       return;
     }
 
+    changed = true;
     applyRollupChanges(previous, buildSnapshot(record));
   });
+  return changed;
 }
